@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id                   String   @id @default(cuid())
+  clerkId              String?  @unique // For Clerk integration
+  username             String?  @unique // For custom authentication
+  email                String   @unique
+  password             String?  // For custom authentication
+  firstName            String?
+  lastName             String?
+  fullName             String?
+  phone                String?
+  gender               Gender?
+  avatar               String?  // URL to profile picture
+  
+  // Account status
+  isActive             Boolean  @default(true)
+  isVerified           Boolean  @default(false)
+  status               UserStatus @default(ACTIVE)
+  
+  // Notification preferences
+  emailNotifications   Boolean  @default(true)
+  smsNotifications     Boolean  @default(false)
+  pushNotifications    Boolean  @default(true)
+  
+  // Privacy settings
+  profileVisible       Boolean  @default(true)
+  
+  // Role and permissions
+  role                 UserRole @default(CLIENT)
+  
+  // Timestamps
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  lastLoginAt          DateTime?
+  
+  // Relations (for future expansion)
+  appointments         Appointment[]
+  messages             Message[]
+  consultations        Consultation[]
+  lawyer               Lawyer?
+  
+  @@map("users")
+}
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  PENDING_VERIFICATION
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+// Future models for relationships
+model Appointment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("appointments")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  isRead    Boolean  @default(false)
+  sentAt    DateTime @default(now())
+  
+  @@map("messages")
+}
+
+model Consultation {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      ConsultationStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("consultations")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum ConsultationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Lawyer {
+  id       String  @id @default(cuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  professionalSummary      String?
+  firm String
+  location String?
+  barAdmissionYear  String?
+  experience Int?
+  practiceAreas String[] // Array of strings for practice areas
+  education String?
+  barAssociation String?
+  website String?
+  specializations String[] // Array of strings for specializations
+  languages String[] // Array of strings for languages spoken
+  
+  @@map("lawyers")
+}
