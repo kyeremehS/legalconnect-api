@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import userouter from './routes/user.routes';
 import lawyerRouter from './routes/lawyer.routes';
+import appointmentRouter from './routes/appointment.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -19,6 +20,7 @@ app.get('/', (req, res) => {
     endpoints: {
       users: '/api/users',
       lawyers: '/api/lawyers',
+      appointments: '/api/appointments',
       health: '/health'
     }
   });
@@ -36,6 +38,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/users', userouter);
 app.use('/api/lawyers', lawyerRouter);
+app.use('/api/appointments', appointmentRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
