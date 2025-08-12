@@ -64,6 +64,14 @@ lawyerRouter.get('/user/:userId',
     lawyerController.getLawyerByUserId.bind(lawyerController)
 );
 
+// @route   POST /api/lawyers/register
+// @desc    Register a new lawyer (user + lawyer profile)
+// @access  Public
+lawyerRouter.post('/register', 
+    rateLimit(5, 60 * 60 * 1000), // 5 registrations per hour
+    lawyerController.registerLawyer.bind(lawyerController)
+);
+
 // @route   POST /api/lawyers
 // @desc    Create a new lawyer profile
 // @access  Private (Authenticated users, preferably lawyers/admins)

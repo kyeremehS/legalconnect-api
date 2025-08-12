@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import { LawyerRepository } from '../repositories/lawyer.repository';
+import { UserRepository, CreateUserData } from '../repositories/user.repository';
+import { hashPassword } from '../utils/bcrypt';
 
 export class LawyerService {
     private lawyerRepository: LawyerRepository;
+    private userRepository: UserRepository;
 
     constructor() {
         this.lawyerRepository = new LawyerRepository();
+        this.userRepository = new UserRepository();
     }
 
     async getAllLawyers(req: Request, res: Response) {
@@ -162,6 +166,90 @@ export class LawyerService {
 
         } catch (error) {
             console.error('Error creating lawyer:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+
+    async registerLawyer(req: Request, res: Response) {
+        try {
+            const {
+                // User data
+                firstName,
+                lastName,
+                email,
+                password,
+                // Lawyer specific data
+                firm,
+                location,
+                barAdmissionYear,
+                experience,
+                practiceAreas,
+                education,
+                barAssociation,
+                specializations,
+                languages,
+                professionalSummary
+            } = req.body;
+
+            // Check if user already exists
+            const existingUser = await this.userRepository.findByEmail(email);
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User with this email already exists'
+                });
+            }
+
+            // Hash password
+            const hashedPassword = await hashPassword(password);
+
+            // Create user with LAWYER role
+            const userData: CreateUserData = {
+                firstName,
+                lastName,
+                username: email, // Using email as username
+                password: hashedPassword,
+                email,
+                role: 'LAWYER',
+                fullName: `${firstName} ${lastName}`.trim()
+            };
+
+            const newUser = await this.userRepository.create(userData);
+
+            // Create lawyer profile
+            const lawyerData = {
+                userId: newUser.id,
+                firm,
+                location,
+                barAdmissionYear,
+                experience: parseInt(experience) || 0,
+                practiceAreas: Array.isArray(practiceAreas) ? practiceAreas : practiceAreas?.split(',').map((area: string) => area.trim()) || [],
+                education,
+                barAssociation,
+                specializations: Array.isArray(specializations) ? specializations : specializations?.split(',').map((spec: string) => spec.trim()) || [],
+                languages: Array.isArray(languages) ? languages : languages?.split(',').map((lang: string) => lang.trim()) || [],
+                professionalSummary
+            };
+
+            const newLawyer = await this.lawyerRepository.create(lawyerData);
+
+            // Remove sensitive data from response
+            const { password: _, ...userResponse } = newUser;
+
+            return res.status(201).json({
+                success: true,
+                message: 'Lawyer registered successfully',
+                data: {
+                    user: userResponse,
+                    lawyer: newLawyer
+                }
+            });
+
+        } catch (error) {
+            console.error('Error registering lawyer:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Internal server error'

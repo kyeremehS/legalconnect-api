@@ -29,6 +29,11 @@ export class LawyerController {
         return await lawyerService.createLawyer(req, res);
     }
 
+    async registerLawyer(req: Request, res: Response) {
+        // Complete lawyer registration (user + lawyer profile)
+        return await lawyerService.registerLawyer(req, res);
+    }
+
     async updateLawyer(req: Request, res: Response) {
         // Data is already validated by middleware
         return await lawyerService.updateLawyer(req, res);
