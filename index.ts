@@ -4,6 +4,7 @@ import userouter from './routes/user.routes';
 import lawyerRouter from './routes/lawyer.routes';
 import appointmentRouter from './routes/appointment.routes';
 import certificateRouter from './routes/certificate.routes';
+import adminVerificationRouter from './routes/admin-verification.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,6 +24,7 @@ app.get('/', (req, res) => {
       lawyers: '/api/lawyers',
       appointments: '/api/appointments',
       certificates: '/api/certificates',
+      adminVerifications: '/api/admin/verifications',
       health: '/health'
     },
     certificateEndpoints: {
@@ -49,6 +51,7 @@ app.use('/api/users', userouter);
 app.use('/api/lawyers', lawyerRouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/certificates', certificateRouter);
+app.use('/api/admin/verifications', adminVerificationRouter);
 
 // 404 handler
 app.use('*', (req, res) => {

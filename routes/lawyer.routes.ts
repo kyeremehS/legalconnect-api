@@ -106,4 +106,29 @@ lawyerRouter.delete('/:id',
     lawyerController.deleteLawyer.bind(lawyerController)
 );
 
+// Verification routes
+// Get verification status
+// GET /api/lawyers/verification/status
+lawyerRouter.get('/verification/status',
+    authenticate,
+    authorize('LAWYER'),
+    lawyerController.getVerificationStatus.bind(lawyerController)
+);
+
+// Verify certificate
+// POST /api/lawyers/verification/certificate
+lawyerRouter.post('/verification/certificate',
+    authenticate,
+    authorize('LAWYER'),
+    lawyerController.verifyCertificate.bind(lawyerController)
+);
+
+// Resubmit verification
+// POST /api/lawyers/verification/resubmit
+lawyerRouter.post('/verification/resubmit',
+    authenticate,
+    authorize('LAWYER'),
+    lawyerController.resubmitVerification.bind(lawyerController)
+);
+
 export default lawyerRouter;

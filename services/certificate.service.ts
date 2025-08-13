@@ -267,6 +267,98 @@ export async function getCertificateByNumber(certificateNumber: string) {
 }
 
 // Close Prisma connection when the process exits
+/**
+ * Enhanced verification function that returns detailed certificate information
+ * @param params - Object containing nameOfLawyer, dateOfIssue, and certificateNumber
+ * @returns Promise with verification result and certificate details
+ */
+export async function verifyLawyerCertificate(params: {
+  certificateNumber: string;
+  nameOfLawyer?: string;
+  dateOfIssue?: string;
+}): Promise<{
+  verified: boolean;
+  certificate?: any;
+  matchScore?: number;
+  message?: string;
+}> {
+  try {
+    const { certificateNumber, nameOfLawyer, dateOfIssue } = params;
+    
+    // First, try to find certificate by number
+    const certificate = await prisma.certificate.findUnique({
+      where: { certificateNumber: certificateNumber.trim() }
+    });
+    
+    if (!certificate) {
+      return {
+        verified: false,
+        message: 'Certificate number not found in database'
+      };
+    }
+    
+    let matchScore = 1.0; // Start with perfect match for certificate number
+    
+    // If name is provided, verify it matches
+    if (nameOfLawyer) {
+      const cleanInputName = nameOfLawyer.toLowerCase().trim();
+      const cleanCertName = certificate.nameOfLawyer.toLowerCase().trim();
+      
+      // Simple name matching (can be enhanced with fuzzy matching)
+      if (cleanInputName === cleanCertName) {
+        matchScore = 1.0;
+      } else if (cleanCertName.includes(cleanInputName) || cleanInputName.includes(cleanCertName)) {
+        matchScore = 0.8;
+      } else {
+        // Calculate similarity based on common words
+        const inputWords = cleanInputName.split(' ');
+        const certWords = cleanCertName.split(' ');
+        const commonWords = inputWords.filter(word => certWords.includes(word));
+        matchScore = commonWords.length / Math.max(inputWords.length, certWords.length);
+        
+        if (matchScore < 0.5) {
+          return {
+            verified: false,
+            certificate,
+            matchScore,
+            message: 'Name does not match certificate record'
+          };
+        }
+      }
+    }
+    
+    // If date is provided, verify it matches
+    if (dateOfIssue) {
+      const inputDate = parseFlexibleDate(dateOfIssue);
+      if (inputDate) {
+        const certDate = new Date(certificate.dateOfIssue);
+        if (Math.abs(inputDate.getTime() - certDate.getTime()) > 24 * 60 * 60 * 1000) {
+          return {
+            verified: false,
+            certificate,
+            matchScore: matchScore * 0.5,
+            message: 'Date of issue does not match certificate record'
+          };
+        }
+      }
+    }
+    
+    return {
+      verified: true,
+      certificate,
+      matchScore,
+      message: 'Certificate verified successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error in enhanced certificate verification:', error);
+    return {
+      verified: false,
+      message: 'Error during certificate verification'
+    };
+  }
+}
+
 process.on('beforeExit', async () => {
   await prisma.$disconnect();
 });

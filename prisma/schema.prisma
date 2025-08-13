@@ -127,7 +127,7 @@ model Notification {
   userId    String
   title     String
   message   String
-  type      NotificationType @default(INFO)
+  type      NotificationType @default(APPOINTMENT_CONFIRMED)
   isRead    Boolean  @default(false)
   data      Json?    // Store appointment ID, etc.
   createdAt DateTime @default(now())
@@ -177,12 +177,33 @@ enum MeetingType {
 }
 
 enum NotificationType {
-  APPOINTMENT_REQUEST
   APPOINTMENT_CONFIRMED
   APPOINTMENT_CANCELLED
   APPOINTMENT_REMINDER
-  INFO
-  WARNING
+  APPOINTMENT_REQUEST
+  APPOINTMENT_RESCHEDULED
+  LAWYER_VERIFICATION_PENDING
+  LAWYER_VERIFICATION_APPROVED
+  LAWYER_VERIFICATION_REJECTED
+  DOCUMENT_SUBMITTED
+  DOCUMENT_REVIEW_REQUIRED
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESUBMISSION_REQUIRED
+}
+
+enum DocumentType {
+  BAR_CERTIFICATE
+  PRACTICING_CERTIFICATE
+  ID_DOCUMENT
+  CV_RESUME
+  LAW_DEGREE
+  OTHER
 }
 
 enum ConsultationStatus {
@@ -208,6 +229,26 @@ model Lawyer {
   specializations String[] // Array of strings for specializations
   languages String[] // Array of strings for languages spoken
   
+  // Verification status
+  verificationStatus VerificationStatus @default(PENDING)
+  isVerified Boolean @default(false)
+  verifiedAt DateTime?
+  
+  // Document URLs
+  barCertificateUrl String?
+  practicingCertificateUrl String?
+  idDocumentUrl String?
+  cvResumeUrl String?
+  lawDegreeUrl String?
+  otherDocumentUrl String?
+  
+  // Certificate verification info
+  certificateNumber String?
+  certificateVerified Boolean @default(false)
+  certificateVerifiedAt DateTime?
+  
+  verification LawyerVerification?
+  
   @@map("lawyers")
 }
 
@@ -220,4 +261,41 @@ model Certificate {
   updatedAt         DateTime @updatedAt
   
   @@map("certificates")
+}
+
+model LawyerVerification {
+  id        String   @id @default(cuid())
+  lawyerId  String   @unique
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Verification details
+  status    VerificationStatus @default(PENDING)
+  submittedAt DateTime @default(now())
+  reviewedAt DateTime?
+  reviewedBy String? // Admin user ID
+  
+  // Certificate verification
+  certificateVerified Boolean @default(false)
+  certificateNumber String?
+  certificateName String?
+  certificateIssueDate DateTime?
+  certificateMatchScore Float? // Matching confidence score
+  
+  // Document verification
+  documentsSubmitted DocumentType[]
+  documentsVerified DocumentType[]
+  documentsRejected DocumentType[]
+  
+  // Review notes
+  adminNotes String?
+  rejectionReason String?
+  
+  // Resubmission tracking
+  resubmissionCount Int @default(0)
+  lastResubmissionAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("lawyer_verifications")
 }
