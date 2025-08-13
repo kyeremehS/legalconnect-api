@@ -3,6 +3,7 @@ import cors from 'cors';
 import userouter from './routes/user.routes';
 import lawyerRouter from './routes/lawyer.routes';
 import appointmentRouter from './routes/appointment.routes';
+import certificateRouter from './routes/certificate.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -21,7 +22,15 @@ app.get('/', (req, res) => {
       users: '/api/users',
       lawyers: '/api/lawyers',
       appointments: '/api/appointments',
+      certificates: '/api/certificates',
       health: '/health'
+    },
+    certificateEndpoints: {
+      verify: 'POST /api/certificates/verify',
+      search: 'GET /api/certificates/search?name=<lawyer_name>',
+      lookup: 'GET /api/certificates/lookup?number=<cert_number>',
+      getByNumber: 'GET /api/certificates/number/<cert_number>',
+      legacy: 'GET /api/certificates/<cert_number>'
     }
   });
 });
@@ -39,6 +48,7 @@ app.get('/health', (req, res) => {
 app.use('/api/users', userouter);
 app.use('/api/lawyers', lawyerRouter);
 app.use('/api/appointments', appointmentRouter);
+app.use('/api/certificates', certificateRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
