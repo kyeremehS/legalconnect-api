@@ -3,6 +3,57 @@ import { LawyerVerificationService } from '../services/lawyer-verification.servi
 import { verifyCertificate } from '../services/certificate.service';
 import { prisma } from '../prisma/prismaClient';
 import { hashPassword } from '../utils/bcrypt';
+import { uploadLegalDocument, uploadVideoToS3, UploadResult } from '../utils/aws';
+
+// S3 file upload function
+const uploadFile = async (
+  file: Express.Multer.File, 
+  documentType: string = 'general', 
+  lawyerId?: string
+): Promise<string> => {
+  try {
+    let result: UploadResult;
+    
+    // Check if it's a video file
+    const isVideo = file.mimetype.startsWith('video/');
+    
+    if (isVideo) {
+      result = await uploadVideoToS3(
+        file.buffer,
+        file.originalname,
+        'lawyer-videos',
+        file.mimetype
+      );
+    } else if (lawyerId) {
+      // Upload legal document with organized structure
+      result = await uploadLegalDocument(
+        file.buffer,
+        file.originalname,
+        documentType,
+        lawyerId,
+        file.mimetype
+      );
+    } else {
+      // Fallback for general uploads
+      const { uploadFileToS3 } = await import('../utils/aws');
+      result = await uploadFileToS3(
+        file.buffer,
+        file.originalname,
+        'temp-uploads',
+        file.mimetype
+      );
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+    
+    return result.url!;
+  } catch (error) {
+    console.error('File upload error:', error);
+    throw new Error('Failed to upload file to S3');
+  }
+};
 
 export class LawyerRegistrationController {
   private lawyerVerificationService: LawyerVerificationService;

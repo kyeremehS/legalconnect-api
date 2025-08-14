@@ -6,6 +6,7 @@ import appointmentRouter from './routes/appointment.routes';
 import certificateRouter from './routes/certificate.routes';
 import adminVerificationRouter from './routes/admin-verification.routes';
 import lawyerRegistrationRouter from './routes/lawyer-registration.routes';
+import uploadRouter from './routes/upload.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -24,6 +25,7 @@ app.get('/', (req, res) => {
       users: '/api/users',
       lawyers: '/api/lawyers',
       lawyerRegistration: '/api/lawyer-registration',
+      uploads: '/api/uploads',
       appointments: '/api/appointments',
       certificates: '/api/certificates',
       adminVerifications: '/api/admin/verifications',
@@ -52,6 +54,7 @@ app.get('/health', (req, res) => {
 app.use('/api/users', userouter);
 app.use('/api/lawyers', lawyerRouter);
 app.use('/api/lawyer-registration', lawyerRegistrationRouter);
+app.use('/api/uploads', uploadRouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/certificates', certificateRouter);
 app.use('/api/admin/verifications', adminVerificationRouter);

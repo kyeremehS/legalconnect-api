@@ -234,13 +234,14 @@ model Lawyer {
   isVerified Boolean @default(false)
   verifiedAt DateTime?
   
-  // Document URLs
-  barCertificateUrl String?
-  practicingCertificateUrl String?
-  idDocumentUrl String?
-  cvResumeUrl String?
-  lawDegreeUrl String?
-  otherDocumentUrl String?
+  // Document URLs - Arrays to support multiple files
+  barCertificateUrl String[]
+  practicingCertificateUrl String[]
+  idDocumentUrl String[]
+  cvResumeUrl String[]
+  lawDegreeUrl String[]
+  otherDocumentUrl String[]
+  videoUrl String[] // New field for video URLs
   
   // Certificate verification info
   certificateNumber String?
