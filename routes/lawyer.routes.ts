@@ -30,6 +30,13 @@ lawyerRouter.get('/search/practice-areas', lawyerController.searchByPracticeArea
 // @access  Public
 lawyerRouter.get('/search/location', lawyerController.searchByLocation.bind(lawyerController));
 
+// @route   GET /api/lawyers/videos
+// @desc    Get all videos uploaded by lawyers
+// @access  Public
+lawyerRouter.get('/videos', 
+    lawyerController.getAllLawyerVideos.bind(lawyerController)
+);
+
 // @route   GET /api/lawyers/:id
 // @desc    Get lawyer by ID
 // @access  Public
@@ -129,13 +136,6 @@ lawyerRouter.post('/verification/resubmit',
     authenticate,
     authorize('LAWYER'),
     lawyerController.resubmitVerification.bind(lawyerController)
-);
-
-// @route   GET /api/lawyers/videos
-// @desc    Get all videos uploaded by lawyers
-// @access  Public
-lawyerRouter.get('/videos', 
-    lawyerController.getAllLawyerVideos.bind(lawyerController)
 );
 
 // @route   GET /api/lawyers/:id/videos
