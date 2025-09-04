@@ -131,4 +131,19 @@ lawyerRouter.post('/verification/resubmit',
     lawyerController.resubmitVerification.bind(lawyerController)
 );
 
+// @route   GET /api/lawyers/videos
+// @desc    Get all videos uploaded by lawyers
+// @access  Public
+lawyerRouter.get('/videos', 
+    lawyerController.getAllLawyerVideos.bind(lawyerController)
+);
+
+// @route   GET /api/lawyers/:id/videos
+// @desc    Get videos by specific lawyer
+// @access  Public
+lawyerRouter.get('/:id/videos', 
+    validateParams(lawyerParamsDto),
+    lawyerController.getLawyerVideos.bind(lawyerController)
+);
+
 export default lawyerRouter;

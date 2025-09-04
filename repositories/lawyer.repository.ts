@@ -210,4 +210,53 @@ export class LawyerRepository {
             }
         });
     }
+
+    async findManyWithVideos(): Promise<Lawyer[]> {
+        // Get all lawyers first, then filter in JavaScript since Prisma array filters are limited
+        const allLawyers = await prisma.lawyer.findMany({
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        fullName: true,
+                        email: true,
+                        phone: true,
+                        avatar: true,
+                        isActive: true,
+                        isVerified: true,
+                        createdAt: true,
+                        updatedAt: true
+                    }
+                }
+            }
+        });
+        
+        // Filter lawyers that have videos
+        return allLawyers.filter(lawyer => lawyer.videoUrl && lawyer.videoUrl.length > 0);
+    }
+
+    async findByIdWithUser(id: string): Promise<Lawyer | null> {
+        return await prisma.lawyer.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        fullName: true,
+                        email: true,
+                        phone: true,
+                        avatar: true,
+                        isActive: true,
+                        isVerified: true,
+                        createdAt: true,
+                        updatedAt: true
+                    }
+                }
+            }
+        });
+    }
 }

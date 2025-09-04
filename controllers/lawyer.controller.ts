@@ -177,4 +177,82 @@ export class LawyerController {
             res.status(500).json({ error: 'Failed to resubmit verification' });
         }
     }
+
+    async getAllLawyerVideos(req: Request, res: Response) {
+        try {
+            // Get all lawyers with their videos
+            const lawyers = await lawyerRepository.findManyWithVideos();
+            
+            // Flatten videos with lawyer information
+            const videos = lawyers.flatMap((lawyer: any) => 
+                lawyer.videoUrl?.map((videoUrl: string) => ({
+                    id: `${lawyer.id}_${videoUrl}`,
+                    url: videoUrl,
+                    lawyer: {
+                        id: lawyer.id,
+                        name: lawyer.user?.fullName || `${lawyer.user?.firstName} ${lawyer.user?.lastName}`,
+                        firm: lawyer.firm,
+                        practiceAreas: lawyer.practiceAreas
+                    },
+                    // Add default metadata - can be enhanced later
+                    views: Math.floor(Math.random() * 10000) + 100,
+                    duration: "3:45", // Default duration
+                    uploadedAt: new Date()
+                })) || []
+            );
+
+            res.json({
+                success: true,
+                data: videos
+            });
+        } catch (error) {
+            console.error('Error fetching lawyer videos:', error);
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to fetch videos' 
+            });
+        }
+    }
+
+    async getLawyerVideos(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            
+            // Get specific lawyer with videos
+            const lawyer = await lawyerRepository.findByIdWithUser(id);
+            
+            if (!lawyer) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Lawyer not found'
+                });
+            }
+
+            // Format videos
+            const videos = lawyer.videoUrl?.map((videoUrl: string) => ({
+                id: `${lawyer.id}_${videoUrl}`,
+                url: videoUrl,
+                lawyer: {
+                    id: lawyer.id,
+                    name: (lawyer as any).user?.fullName || `${(lawyer as any).user?.firstName} ${(lawyer as any).user?.lastName}`,
+                    firm: lawyer.firm,
+                    practiceAreas: lawyer.practiceAreas
+                },
+                views: Math.floor(Math.random() * 10000) + 100,
+                duration: "3:45",
+                uploadedAt: new Date()
+            })) || [];
+
+            res.json({
+                success: true,
+                data: videos
+            });
+        } catch (error) {
+            console.error('Error fetching lawyer videos:', error);
+            res.status(500).json({ 
+                success: false, 
+                error: 'Failed to fetch videos' 
+            });
+        }
+    }
 }
