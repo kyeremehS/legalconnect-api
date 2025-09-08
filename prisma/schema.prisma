@@ -58,6 +58,10 @@ model User {
   availability         LawyerAvailability[] @relation("LawyerAvailability")
   notifications        Notification[]
   
+  // Video interactions
+  videoLikes           VideoLike[]
+  videoComments        VideoComment[]
+  
   @@map("users")
 }
 
@@ -250,6 +254,10 @@ model Lawyer {
   
   verification LawyerVerification?
   
+  // Video interactions
+  videoLikes       VideoLike[]
+  videoComments    VideoComment[]
+  
   @@map("lawyers")
 }
 
@@ -299,4 +307,34 @@ model LawyerVerification {
   updatedAt DateTime @updatedAt
   
   @@map("lawyer_verifications")
+}
+
+model VideoLike {
+  id        String   @id @default(cuid())
+  userId    String
+  lawyerId  String
+  videoUrl  String   // The S3 URL of the video
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Ensure a user can only like a video once
+  @@unique([userId, lawyerId, videoUrl])
+  @@map("video_likes")
+}
+
+model VideoComment {
+  id        String   @id @default(cuid())
+  userId    String
+  lawyerId  String
+  videoUrl  String   // The S3 URL of the video
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  @@map("video_comments")
 }
