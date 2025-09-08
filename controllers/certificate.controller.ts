@@ -15,7 +15,7 @@ export class CertificateController {
       const { nameOfLawyer, dateOfIssue, certificateNumber } = req.body;
 
       // Validate required fields with specific messages
-      const missingFields = [];
+      const missingFields: string[] = [];
       if (!nameOfLawyer) missingFields.push('nameOfLawyer');
       if (!dateOfIssue) missingFields.push('dateOfIssue');
       if (!certificateNumber) missingFields.push('certificateNumber');

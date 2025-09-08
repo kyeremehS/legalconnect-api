@@ -115,7 +115,12 @@ export class LawyerRegistrationController {
       }
 
       // Verify certificate automatically if provided
-      let certificateVerificationResult = null;
+      let certificateVerificationResult: {
+        isVerified: boolean;
+        message: string;
+        matchedCertificate: any;
+        confidence: number;
+      } | null = null;
       let isVerified = false;
       if (certificateNumber) {
         try {
