@@ -16,7 +16,9 @@ const prisma = new PrismaClient();
 export interface VideoStats {
   likeCount: number;
   commentCount: number;
+  viewCount: number;
   userLiked: boolean;
+  userViewed: boolean;
 }
 
 export interface CommentWithUser {
@@ -231,7 +233,7 @@ export class VideoInteractionService {
   // Get video statistics
   async getVideoStats(lawyerId: string, videoUrl: string, userId?: string): Promise<VideoStats> {
     try {
-      const [likesCount, commentsCount, userLike] = await Promise.all([
+      const [likesCount, commentsCount, viewsCount, userLike, userViewed] = await Promise.all([
         prisma.videoLike.count({
           where: {
             lawyerId,
@@ -239,6 +241,12 @@ export class VideoInteractionService {
           }
         }),
         prisma.videoComment.count({
+          where: {
+            lawyerId,
+            videoUrl
+          }
+        }),
+        prisma.videoView.count({
           where: {
             lawyerId,
             videoUrl
@@ -252,13 +260,22 @@ export class VideoInteractionService {
               videoUrl
             }
           }
+        }) : null,
+        userId ? prisma.videoView.findFirst({
+          where: {
+            lawyerId,
+            videoUrl,
+            userId
+          }
         }) : null
       ]);
 
       return {
         likeCount: likesCount,
         commentCount: commentsCount,
-        userLiked: !!userLike
+        viewCount: viewsCount,
+        userLiked: !!userLike,
+        userViewed: !!userViewed
       };
     } catch (error) {
       console.error('Get video stats error:', error);
@@ -289,6 +306,72 @@ export class VideoInteractionService {
     } catch (error) {
       console.error('Delete comment error:', error);
       throw new Error('Failed to delete comment');
+    }
+  }
+
+  // Record a video view (can be called multiple times by same user)
+  async recordVideoView(lawyerId: string, videoUrl: string, userId?: string, duration?: number) {
+    try {
+      console.log('Recording video view:', { lawyerId, videoUrl, userId, duration });
+
+      const viewData: any = {
+        lawyerId,
+        videoUrl,
+        viewedAt: new Date()
+      };
+
+      // Add optional fields if provided
+      if (userId) {
+        viewData.userId = userId;
+      }
+      if (duration) {
+        viewData.duration = duration;
+      }
+
+      const view = await prisma.videoView.create({
+        data: viewData
+      });
+
+      console.log('Video view recorded:', view.id);
+      return { success: true, viewId: view.id };
+    } catch (error) {
+      console.error('Record video view error:', error);
+      throw new Error('Failed to record video view');
+    }
+  }
+
+  // Get unique view count (count distinct users + anonymous views)
+  async getVideoViewCount(lawyerId: string, videoUrl: string): Promise<number> {
+    try {
+      const viewCount = await prisma.videoView.count({
+        where: {
+          lawyerId,
+          videoUrl
+        }
+      });
+
+      return viewCount;
+    } catch (error) {
+      console.error('Get video view count error:', error);
+      return 0;
+    }
+  }
+
+  // Check if user has viewed this video
+  async hasUserViewedVideo(lawyerId: string, videoUrl: string, userId: string): Promise<boolean> {
+    try {
+      const view = await prisma.videoView.findFirst({
+        where: {
+          lawyerId,
+          videoUrl,
+          userId
+        }
+      });
+
+      return !!view;
+    } catch (error) {
+      console.error('Check user viewed video error:', error);
+      return false;
     }
   }
 }

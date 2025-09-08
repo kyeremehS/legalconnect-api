@@ -209,4 +209,36 @@ export class VideoInteractionController {
       });
     }
   };
+
+  // Record a video view
+  recordVideoView = async (req: Request, res: Response) => {
+    try {
+      const { lawyerId, videoUrl, duration } = req.body;
+      const userId = (req as any).user?.id; // Optional - can be anonymous
+
+      if (!lawyerId || !videoUrl) {
+        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      }
+
+      console.log('Recording video view:', { lawyerId, videoUrl, userId, duration });
+
+      const result = await this.videoInteractionService.recordVideoView(
+        lawyerId,
+        videoUrl,
+        userId,
+        duration
+      );
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('Record video view error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error' 
+      });
+    }
+  };
 }

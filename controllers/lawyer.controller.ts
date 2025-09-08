@@ -204,8 +204,8 @@ export class LawyerController {
                                 firm: lawyer.firm,
                                 practiceAreas: lawyer.practiceAreas
                             },
-                            // Use real like count as views (since views = engagement)
-                            views: stats.likeCount,
+                            // Use real view count and like count separately
+                            views: stats.viewCount,
                             likes: stats.likeCount,
                             comments: stats.commentCount,
                             duration: "3:45", // Default duration - can be enhanced later
@@ -260,8 +260,8 @@ export class LawyerController {
                             firm: lawyer.firm,
                             practiceAreas: lawyer.practiceAreas
                         },
-                        // Use real like count as views (since views = engagement)
-                        views: stats.likeCount,
+                        // Use real view count and like count separately
+                        views: stats.viewCount,
                         likes: stats.likeCount,
                         comments: stats.commentCount,
                         duration: "3:45",

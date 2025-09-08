@@ -258,6 +258,7 @@ model Lawyer {
   // Video interactions
   videoLikes       VideoLike[]
   videoComments    VideoComment[]
+  videoViews       VideoView[]
   
   @@map("lawyers")
 }
@@ -338,4 +339,21 @@ model VideoComment {
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   
   @@map("video_comments")
+}
+
+model VideoView {
+  id        String   @id @default(cuid())
+  userId    String?  // Optional - anonymous views are allowed
+  lawyerId  String
+  videoUrl  String   // The S3 URL of the video
+  viewedAt  DateTime @default(now())
+  
+  // Track view duration for analytics (optional)
+  duration  Int?     // Duration watched in seconds
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Allow multiple views from same user but track each view separately
+  @@map("video_views")
 }
