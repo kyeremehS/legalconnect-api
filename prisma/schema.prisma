@@ -61,6 +61,7 @@ model User {
   // Video interactions
   videoLikes           VideoLike[]
   videoComments        VideoComment[]
+  videoViews           VideoView[]
   
   @@map("users")
 }

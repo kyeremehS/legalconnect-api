@@ -4,10 +4,12 @@ import { LawyerVerificationService } from '../services/lawyer-verification.servi
 import { verifyLawyerCertificate } from '../services/certificate.service';
 import { LawyerRepository } from '../repositories/lawyer.repository';
 import { UserRepository } from '../repositories/user.repository';
+import { VideoInteractionService } from '../services/video-interaction.service';
 
 const lawyerService = new LawyerService();
 const verificationService = new LawyerVerificationService();
 const lawyerRepository = new LawyerRepository();
+const videoInteractionService = new VideoInteractionService();
 const userRepository = new UserRepository();
 
 export class LawyerController {
@@ -183,27 +185,39 @@ export class LawyerController {
             // Get all lawyers with their videos
             const lawyers = await lawyerRepository.findManyWithVideos();
             
-            // Flatten videos with lawyer information
-            const videos = lawyers.flatMap((lawyer: any) => 
-                lawyer.videoUrl?.map((videoUrl: string) => ({
-                    id: `${lawyer.id}_${videoUrl}`,
-                    url: videoUrl,
-                    lawyer: {
-                        id: lawyer.id,
-                        name: lawyer.user?.fullName || `${lawyer.user?.firstName} ${lawyer.user?.lastName}`,
-                        firm: lawyer.firm,
-                        practiceAreas: lawyer.practiceAreas
-                    },
-                    // Add default metadata - can be enhanced later
-                    views: Math.floor(Math.random() * 10000) + 100,
-                    duration: "3:45", // Default duration
-                    uploadedAt: new Date()
-                })) || []
+            // Flatten videos with lawyer information and get real like counts
+            const videosWithStats = await Promise.all(
+                lawyers.flatMap((lawyer: any) => 
+                    lawyer.videoUrl?.map(async (videoUrl: string) => {
+                        // Get real like count for this video
+                        const stats = await videoInteractionService.getVideoStats(
+                            lawyer.id,
+                            videoUrl
+                        );
+
+                        return {
+                            id: `${lawyer.id}_${videoUrl}`,
+                            url: videoUrl,
+                            lawyer: {
+                                id: lawyer.id,
+                                name: lawyer.user?.fullName || `${lawyer.user?.firstName} ${lawyer.user?.lastName}`,
+                                firm: lawyer.firm,
+                                practiceAreas: lawyer.practiceAreas
+                            },
+                            // Use real like count as views (since views = engagement)
+                            views: stats.likeCount,
+                            likes: stats.likeCount,
+                            comments: stats.commentCount,
+                            duration: "3:45", // Default duration - can be enhanced later
+                            uploadedAt: new Date()
+                        };
+                    }) || []
+                )
             );
 
             res.json({
                 success: true,
-                data: videos
+                data: videosWithStats
             });
         } catch (error) {
             console.error('Error fetching lawyer videos:', error);
@@ -228,24 +242,37 @@ export class LawyerController {
                 });
             }
 
-            // Format videos
-            const videos = lawyer.videoUrl?.map((videoUrl: string) => ({
-                id: `${lawyer.id}_${videoUrl}`,
-                url: videoUrl,
-                lawyer: {
-                    id: lawyer.id,
-                    name: (lawyer as any).user?.fullName || `${(lawyer as any).user?.firstName} ${(lawyer as any).user?.lastName}`,
-                    firm: lawyer.firm,
-                    practiceAreas: lawyer.practiceAreas
-                },
-                views: Math.floor(Math.random() * 10000) + 100,
-                duration: "3:45",
-                uploadedAt: new Date()
-            })) || [];
+            // Format videos with real like counts
+            const videosWithStats = await Promise.all(
+                lawyer.videoUrl?.map(async (videoUrl: string) => {
+                    // Get real like count for this video
+                    const stats = await videoInteractionService.getVideoStats(
+                        lawyer.id,
+                        videoUrl
+                    );
+
+                    return {
+                        id: `${lawyer.id}_${videoUrl}`,
+                        url: videoUrl,
+                        lawyer: {
+                            id: lawyer.id,
+                            name: (lawyer as any).user?.fullName || `${(lawyer as any).user?.firstName} ${(lawyer as any).user?.lastName}`,
+                            firm: lawyer.firm,
+                            practiceAreas: lawyer.practiceAreas
+                        },
+                        // Use real like count as views (since views = engagement)
+                        views: stats.likeCount,
+                        likes: stats.likeCount,
+                        comments: stats.commentCount,
+                        duration: "3:45",
+                        uploadedAt: new Date()
+                    };
+                }) || []
+            );
 
             res.json({
                 success: true,
-                data: videos
+                data: videosWithStats
             });
         } catch (error) {
             console.error('Error fetching lawyer videos:', error);
