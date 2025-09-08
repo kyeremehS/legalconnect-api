@@ -29,10 +29,15 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    console.log('Authentication middleware called for:', req.method, req.path);
+    console.log('Query parameters:', req.query);
+    
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
+    console.log('Auth header:', authHeader ? 'present' : 'missing');
     
     if (!authHeader) {
+      console.log('No auth header found - returning 401');
       res.status(401).json({
         success: false,
         message: 'Access token is required'

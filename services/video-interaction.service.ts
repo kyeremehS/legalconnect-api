@@ -2,10 +2,21 @@ import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
+// Test database connection on service load
+(async () => {
+  try {
+    console.log('Testing Prisma database connection...');
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+  }
+})();
+
 export interface VideoStats {
-  likesCount: number;
-  commentsCount: number;
-  isLikedByUser: boolean;
+  likeCount: number;
+  commentCount: number;
+  userLiked: boolean;
 }
 
 export interface CommentWithUser {
@@ -36,7 +47,21 @@ export class VideoInteractionService {
   // Toggle like/unlike for a video
   async toggleLike(userId: string, lawyerId: string, videoUrl: string) {
     try {
+      console.log('=== SERVICE TOGGLE LIKE START ===');
+      console.log('Service parameters:', { userId, lawyerId, videoUrl });
+
+      // Test the database connection first
+      console.log('Testing database connection...');
+      await prisma.$connect();
+      console.log('Database connection successful');
+
+      // Test if VideoLike table exists by trying a simple query
+      console.log('Testing VideoLike table access...');
+      const testCount = await prisma.videoLike.count();
+      console.log('VideoLike table accessible, current count:', testCount);
+
       // Check if user already liked this video
+      console.log('Checking for existing like...');
       const existingLike = await prisma.videoLike.findUnique({
         where: {
           userId_lawyerId_videoUrl: {
@@ -47,7 +72,10 @@ export class VideoInteractionService {
         }
       });
 
+      console.log('Existing like result:', existingLike);
+
       if (existingLike) {
+        console.log('Removing existing like...');
         // Unlike - remove the like
         await prisma.videoLike.delete({
           where: {
@@ -55,13 +83,27 @@ export class VideoInteractionService {
           }
         });
 
+        // Get updated like count
+        console.log('Getting updated like count after unlike...');
+        const likeCount = await prisma.videoLike.count({
+          where: {
+            lawyerId,
+            videoUrl
+          }
+        });
+
+        console.log('Unlike complete. Like count:', likeCount);
+
         return {
+          liked: false,
+          likeCount,
           action: 'unliked',
           message: 'Video unliked successfully'
         };
       } else {
+        console.log('Adding new like...');
         // Like - add the like
-        await prisma.videoLike.create({
+        const newLike = await prisma.videoLike.create({
           data: {
             userId,
             lawyerId,
@@ -69,14 +111,41 @@ export class VideoInteractionService {
           }
         });
 
+        console.log('New like created:', newLike);
+
+        // Get updated like count
+        console.log('Getting updated like count after like...');
+        const likeCount = await prisma.videoLike.count({
+          where: {
+            lawyerId,
+            videoUrl
+          }
+        });
+
+        console.log('Like complete. Like count:', likeCount);
+
         return {
+          liked: true,
+          likeCount,
           action: 'liked',
           message: 'Video liked successfully'
         };
       }
     } catch (error) {
-      console.error('Toggle like error:', error);
-      throw new Error('Failed to toggle like');
+      console.error('=== SERVICE TOGGLE LIKE ERROR ===');
+      console.error('Toggle like service error:', error);
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack'
+      });
+      
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw new Error(`Database operation failed: ${error.message}`);
+      } else {
+        throw new Error('Unknown database error occurred');
+      }
     }
   }
 
@@ -187,9 +256,9 @@ export class VideoInteractionService {
       ]);
 
       return {
-        likesCount,
-        commentsCount,
-        isLikedByUser: !!userLike
+        likeCount: likesCount,
+        commentCount: commentsCount,
+        userLiked: !!userLike
       };
     } catch (error) {
       console.error('Get video stats error:', error);
