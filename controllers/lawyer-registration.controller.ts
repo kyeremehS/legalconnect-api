@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { LawyerVerificationService } from '../services/lawyer-verification.service';
 import { verifyCertificate } from '../services/certificate.service';
-import prisma from '../prisma/prismaClient';
+import { prisma } from '../prisma/prismaClient';
 import { hashPassword } from '../utils/bcrypt';
 import { uploadLegalDocument, uploadVideoToS3, UploadResult } from '../utils/aws';
 
