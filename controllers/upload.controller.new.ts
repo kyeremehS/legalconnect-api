@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { UploadService } from '../services/upload.service';
-import { prisma } from '../prisma/prismaClient';
+import prisma from '../prisma/prismaClient';
 
 export class UploadController {
   private uploadService: UploadService;
