@@ -164,13 +164,15 @@ router.post('/test-like', async (req, res) => {
   }
 });
 
-// All API routes require authentication
+// Public endpoints (no authentication required)
+router.post('/view', videoInteractionController.recordVideoView);
+
+// All API routes below require authentication
 router.use(authenticate);
 
 // Real video interaction endpoints
 router.post('/like', videoInteractionController.toggleLike);
 router.post('/comment', videoInteractionController.addComment);
-router.post('/view', videoInteractionController.recordVideoView);
 router.get('/comments', videoInteractionController.getComments);
 router.get('/stats', videoInteractionController.getVideoStats);
 
