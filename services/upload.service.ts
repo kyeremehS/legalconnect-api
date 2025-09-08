@@ -5,7 +5,7 @@ import {
   getPresignedUrl,
   UploadResult 
 } from '../utils/aws';
-import { prisma } from '../prisma/prismaClient';
+import prisma from '../prisma/prismaClient';
 
 export interface DocumentUploadResult {
   uploadedFiles: string[];
