@@ -12,7 +12,7 @@ export class MessageController {
 
     async getConversation(req: Request, res: Response) {
         const { senderId, receiverId } = req.params;
-        const messages = await messageService.fetchConversation(Number(senderId), Number(receiverId));
+        const messages = await messageService.fetchConversation(senderId, receiverId);
         res.json(messages);
     }
 }

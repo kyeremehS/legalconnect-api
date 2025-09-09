@@ -1,18 +1,18 @@
-import { prisma } from "../prisma/prismaClient";
+import prisma from "../prisma/prismaClient";
 
 export class MessageRepository {
-    async createMessage(senderId: number, receiverId: number, senderRole: string, content: string) {
+    async createMessage(senderId: string, receiverId: string, senderRole: string, content: string) {
         return prisma.message.create({
             data: { senderId, receiverId, senderRole, content },
         });
     }
 
-    async getConversation(senderId: number, receiverId: number) {
+    async getConversation(senderId: string, receiverId: string) {
         return prisma.message.findMany({
             where: {
                 OR: [
-                    { senderId: receiverId, receiverId: receiverId },
-                    { senderId: receiverId, receiverId: receiverId },
+                    { senderId: senderId, receiverId: receiverId },
+                    { senderId: receiverId, receiverId: senderId },
                 ],
             },
             orderBy: { createdAt: 'asc' },
