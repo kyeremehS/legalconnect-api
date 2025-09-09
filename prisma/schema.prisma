@@ -357,3 +357,14 @@ model VideoView {
   // Allow multiple views from same user but track each view separately
   @@map("video_views")
 }
+
+// Adding Message model
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  senderRole String   // "lawyer" or "user"
+  content    String
+  createdAt  DateTime @default(now())
+  readAt     DateTime?
+}
