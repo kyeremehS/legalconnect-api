@@ -278,16 +278,22 @@ export class UploadService {
 
           if (currentLawyer) {
             const currentVideoUrls = currentLawyer.videoUrl || [];
-            const updatedVideoUrls = [...currentVideoUrls, uploadResult.url];
+            
+            // Check if the video URL already exists to prevent duplicates
+            if (!currentVideoUrls.includes(uploadResult.url)) {
+              const updatedVideoUrls = [...currentVideoUrls, uploadResult.url];
 
-            // Update database with new video URL appended to array
-            await prisma.lawyer.update({
-              where: { id: lawyerId },
-              data: {
-                videoUrl: updatedVideoUrls
-              }
-            });
-            console.log(`💾 Database updated: videoUrl array with new URL: ${uploadResult.url}`);
+              // Update database with new video URL appended to array
+              await prisma.lawyer.update({
+                where: { id: lawyerId },
+                data: {
+                  videoUrl: updatedVideoUrls
+                }
+              });
+              console.log(`💾 Database updated: videoUrl array with new URL: ${uploadResult.url}`);
+            } else {
+              console.log(`⚠️ Video URL already exists in database: ${uploadResult.url}`);
+            }
           }
         } catch (dbError) {
           console.error('❌ Failed to update database:', dbError);
