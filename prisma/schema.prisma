@@ -52,7 +52,8 @@ model User {
   // Relations (for future expansion)
   clientAppointments   Appointment[] @relation("ClientAppointments")
   lawyerAppointments   Appointment[] @relation("LawyerAppointments")
-  messages             Message[]
+  sentMessages         Message[] @relation("SentMessages")
+  receivedMessages     Message[] @relation("ReceivedMessages")
   consultations        Consultation[]
   lawyer               Lawyer?
   availability         LawyerAvailability[] @relation("LawyerAvailability")
@@ -350,11 +351,17 @@ model VideoView {
 
 // Adding Message model
 model Message {
-  id         Int      @id @default(autoincrement())
-  senderId   Int
-  receiverId Int
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
   senderRole String   // "lawyer" or "user"
   content    String
   createdAt  DateTime @default(now())
   readAt     DateTime?
+  
+  // Relations
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
 }
