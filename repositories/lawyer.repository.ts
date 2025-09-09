@@ -1,5 +1,5 @@
 import prisma from '../prisma/prismaClient';
-import { Lawyer } from '../generated/prisma';
+import { Lawyer } from '@prisma/client';
 
 export class LawyerRepository {
     async findAll(): Promise<Lawyer[]> {

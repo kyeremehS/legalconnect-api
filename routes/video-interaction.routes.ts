@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { VideoInteractionController } from '../controllers/video-interaction.controller';
 import { VideoInteractionService } from '../services/video-interaction.service';
 import { authenticate } from '../middlewares/Auth.middleware';
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 
 const router = Router();
 const videoInteractionController = new VideoInteractionController();

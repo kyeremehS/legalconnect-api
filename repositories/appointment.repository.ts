@@ -1,4 +1,4 @@
-import { PrismaClient, AppointmentStatus, MeetingType } from '../generated/prisma';
+import { PrismaClient, AppointmentStatus, MeetingType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

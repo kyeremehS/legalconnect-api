@@ -1,5 +1,5 @@
 import prisma from '../prisma/prismaClient';
-import { User, UserRole, UserStatus } from '../generated/prisma';
+import { User, UserRole, UserStatus } from '@prisma/client';
 import { RegisterUserInput, UpdateUserInput } from '../Dto';
 
 // Extend the DTO types for repository operations
