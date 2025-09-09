@@ -52,6 +52,7 @@ app.get('/', (req, res) => {
       uploads: '/api/uploads',
       appointments: '/api/appointments',
       certificates: '/api/certificates',
+      messages: '/api/messages',
       adminVerifications: '/api/admin/verifications',
       health: '/health'
     },
