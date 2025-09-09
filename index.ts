@@ -20,11 +20,13 @@ app.use(cors({
     'http://127.0.0.1:3000',
     'https://legalconnect-gh.vercel.app',
     'https://*.vercel.app',
-    /^https:\/\/.*\.vercel\.app$/
+    /^https:\/\/.*\.vercel\.app$/,
+    /^https:\/\/legalconnect-gh.*\.vercel\.app$/
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
