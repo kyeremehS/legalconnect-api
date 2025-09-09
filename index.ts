@@ -8,6 +8,7 @@ import adminVerificationRouter from './routes/admin-verification.routes';
 import lawyerRegistrationRouter from './routes/lawyer-registration.routes';
 import uploadRouter from './routes/upload.routes';
 import videoInteractionRouter from './routes/video-interaction.routes';
+import messageRouter from './routes/message.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -15,8 +16,8 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(cors({
   origin: [
-    'http://localhost:3000', 
-    'http://localhost:3001', 
+    'http://localhost:3000',
+    'http://localhost:3001',
     'http://127.0.0.1:3000',
     'https://legalconnect-gh.vercel.app',
     'https://*.vercel.app',
@@ -82,6 +83,7 @@ app.use('/api/videos', videoInteractionRouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/certificates', certificateRouter);
 app.use('/api/admin/verifications', adminVerificationRouter);
+app.use('/api/messages', messageRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -101,7 +103,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`👥 Users API: http://localhost:${PORT}/api/users`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`👥 Users API: http://localhost:${PORT}/api/users`);
 });
