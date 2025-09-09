@@ -142,16 +142,6 @@ model Notification {
   @@map("notifications")
 }
 
-model Message {
-  id        String   @id @default(cuid())
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  content   String
-  isRead    Boolean  @default(false)
-  sentAt    DateTime @default(now())
-  
-  @@map("messages")
-}
 
 model Consultation {
   id          String   @id @default(cuid())
