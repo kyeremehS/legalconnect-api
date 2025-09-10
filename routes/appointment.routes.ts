@@ -63,6 +63,12 @@ router.get('/client',
   appointmentController.getClientAppointments.bind(appointmentController)
 );
 
+// Testing endpoint for client appointments (no role restriction)
+router.get('/testing/client-appointments', 
+  authenticate,
+  appointmentController.getClientAppointments.bind(appointmentController)
+);
+
 // Update appointment status with PATCH method
 router.patch('/:id/status', 
   authenticate, 
