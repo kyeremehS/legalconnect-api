@@ -45,12 +45,32 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       const { status, notes } = req.body;
-      const lawyerId = req.user?.id;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+      }
+
+      // Get lawyer record from user ID
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { userId },
+        select: { id: true }
+      });
+
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found'
+        });
+      }
       
       const appointment = await appointmentService.updateAppointmentStatus(
         id, 
         status, 
-        lawyerId as string,
+        lawyer.id,
         notes
       );
       
