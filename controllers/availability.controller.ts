@@ -76,7 +76,166 @@ export class AvailabilityController {
     }
   }
 
-  // Get available lawyers for booking
+  // Get current lawyer's own availability (using auth token)
+  async getMyAvailability(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID not found in token',
+        });
+      }
+
+      // Get lawyer record from user ID
+      const lawyer = await availabilityService.getLawyerByUserId(userId);
+      
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found',
+        });
+      }
+
+      const { startDate, endDate } = req.query;
+
+      const availability = await availabilityService.getLawyerAvailability(
+        lawyer.id,
+        startDate as string,
+        endDate as string
+      );
+
+      res.json({
+        success: true,
+        data: availability,
+      });
+    } catch (error) {
+      console.error('Error fetching my availability:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // Create availability for current lawyer (using auth token)
+  async createMyAvailability(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID not found in token',
+        });
+      }
+
+      // Get lawyer record from user ID
+      const lawyer = await availabilityService.getLawyerByUserId(userId);
+      
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found',
+        });
+      }
+
+      const { dayOfWeek, startTime, endTime, date, isRecurring } = req.body;
+
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          message: 'Start time and end time are required',
+        });
+      }
+
+      let availability;
+
+      if (isRecurring) {
+        // For recurring availability, dayOfWeek is required
+        if (dayOfWeek === undefined || dayOfWeek === null) {
+          return res.status(400).json({
+            success: false,
+            message: 'Day of week is required for recurring availability',
+          });
+        }
+
+        availability = await availabilityService.createAvailability(
+          lawyer.id,
+          parseInt(dayOfWeek),
+          startTime,
+          endTime
+        );
+      } else {
+        // For specific date availability, date is required
+        if (!date) {
+          return res.status(400).json({
+            success: false,
+            message: 'Date is required for specific availability',
+          });
+        }
+
+        // Use the day of week from the specific date
+        const specificDate = new Date(date);
+        const dayOfWeekFromDate = specificDate.getDay();
+
+        availability = await availabilityService.createAvailability(
+          lawyer.id,
+          dayOfWeekFromDate,
+          startTime,
+          endTime,
+          date
+        );
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Availability created successfully',
+        data: availability,
+      });
+    } catch (error) {
+      console.error('Error creating my availability:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+    // Get all lawyers for testing
+  async getAllLawyers(req: Request, res: Response) {
+    try {
+      const lawyers = await availabilityService.getAllLawyers();
+      res.json({
+        success: true,
+        data: lawyers
+      });
+    } catch (error) {
+      console.error('Error getting lawyers:', error);
+      res.status(500).json({ success: false, message: 'Failed to get lawyers' });
+    }
+  }
+
+  // Temporary method to verify lawyer for testing
+  async verifyLawyerForTesting(req: Request, res: Response) {
+    try {
+      const { lawyerId } = req.params;
+      const lawyer = await availabilityService.verifyLawyerForTesting(lawyerId);
+      res.json({
+        success: true,
+        message: `Lawyer ${lawyer.user.firstName} ${lawyer.user.lastName} has been verified for testing`,
+        data: lawyer
+      });
+    } catch (error) {
+      console.error('Error verifying lawyer:', error);
+      res.status(500).json({ success: false, message: 'Failed to verify lawyer' });
+    }
+  }
+
+  // Get available lawyers for appointment booking
   async getAvailableLawyers(req: Request, res: Response) {
     try {
       const { date, time, practiceArea } = req.query;

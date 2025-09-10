@@ -50,17 +50,25 @@ router.put('/:id/status',
 );
 
 // Get lawyer's appointments (Lawyer/Admin only)
-router.get('/lawyer/my-appointments', 
+router.get('/lawyer', 
   authenticate, 
   authorize('LAWYER', 'ADMIN'),
   appointmentController.getLawyerAppointments.bind(appointmentController)
 );
 
 // Get client's appointments (Client only)
-router.get('/client/my-appointments', 
+router.get('/client', 
   authenticate, 
   authorize('CLIENT'),
   appointmentController.getClientAppointments.bind(appointmentController)
+);
+
+// Update appointment status with PATCH method
+router.patch('/:id/status', 
+  authenticate, 
+  authorize('LAWYER', 'ADMIN'), 
+  validateSchema(updateStatusSchema),
+  appointmentController.updateAppointmentStatus.bind(appointmentController)
 );
 
 // Get lawyer availability (Public)

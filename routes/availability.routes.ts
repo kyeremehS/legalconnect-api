@@ -8,8 +8,18 @@ const availabilityController = new AvailabilityController();
 // Get available lawyers for booking (public endpoint for clients)
 router.get('/lawyers/available', availabilityController.getAvailableLawyers);
 
+// Testing endpoints
+router.get('/testing/lawyers', availabilityController.getAllLawyers);
+router.post('/testing/verify-lawyer/:lawyerId', availabilityController.verifyLawyerForTesting);
+
 // Protected routes that require authentication
 router.use(AuthMiddleware.authenticate);
+
+// Get current lawyer's availability slots (using auth token)
+router.get('/lawyer/my-availability', availabilityController.getMyAvailability);
+
+// Create availability for current lawyer (using auth token)
+router.post('/lawyer/my-availability', availabilityController.createMyAvailability);
 
 // Lawyer availability management routes
 router.post('/lawyer/:lawyerId/availability', availabilityController.createAvailability);

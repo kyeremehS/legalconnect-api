@@ -1,33 +1,52 @@
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { NotificationService } from './notification.service';
+import { AvailabilityService } from './availability.service';
 
 export class AppointmentService {
   private appointmentRepo = new AppointmentRepository();
   private notificationService = new NotificationService();
+  private availabilityService = new AvailabilityService();
 
   async createAppointment(appointmentData: any) {
     // Transform and validate the appointment data
     const transformedData = {
       clientId: appointmentData.clientId,
       lawyerId: appointmentData.lawyerId,
-      title: appointmentData.title,
+      title: appointmentData.title || `Consultation - ${appointmentData.practiceArea}`,
       description: appointmentData.description || '',
       startTime: new Date(appointmentData.startTime),
       endTime: new Date(appointmentData.endTime),
       meetingType: appointmentData.meetingType || 'VIRTUAL',
       practiceArea: appointmentData.practiceArea,
-      duration: appointmentData.duration
+      duration: appointmentData.duration,
+      status: 'PENDING'
     };
 
-    // Validate time slot availability
-    const isAvailable = await this.appointmentRepo.checkTimeSlotAvailability(
+    // Check availability using the availability service
+    const dayOfWeek = transformedData.startTime.getDay();
+    const timeStr = transformedData.startTime.toTimeString().substring(0, 5);
+    const dateStr = transformedData.startTime.toISOString().split('T')[0];
+
+    const isAvailable = await this.availabilityService.checkAvailability(
+      transformedData.lawyerId,
+      dayOfWeek,
+      timeStr,
+      dateStr
+    );
+
+    if (!isAvailable) {
+      throw new Error('Lawyer is not available at the selected time');
+    }
+
+    // Check for existing appointments at this time
+    const conflictingAppointment = await this.appointmentRepo.checkTimeSlotAvailability(
       transformedData.lawyerId,
       transformedData.startTime.toISOString(),
       transformedData.endTime.toISOString()
     );
 
-    if (!isAvailable) {
-      throw new Error('Time slot is not available');
+    if (!conflictingAppointment) {
+      throw new Error('Time slot is already booked');
     }
 
     // Create appointment

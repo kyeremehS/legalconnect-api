@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { AppointmentService } from '../services/appointment.service';
 import { NotificationService } from '../services/notification.service';
+import { PrismaClient } from '@prisma/client';
 
 const appointmentService = new AppointmentService();
 const notificationService = new NotificationService();
+const prisma = new PrismaClient();
 
 export class AppointmentController {
   // Client books an appointment
@@ -62,11 +64,32 @@ export class AppointmentController {
   // Get lawyer's appointments
   async getLawyerAppointments(req: Request, res: Response) {
     try {
-      const lawyerId = req.user?.id;
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User ID not found in token'
+        });
+      }
+
+      // Get lawyer record from user ID
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { userId },
+        select: { id: true }
+      });
+
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found'
+        });
+      }
+
       const { status, date } = req.query;
       
       const appointments = await appointmentService.getLawyerAppointments(
-        lawyerId as string,
+        lawyer.id,
         {
           status: status as string,
           date: date as string
