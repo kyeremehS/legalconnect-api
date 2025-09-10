@@ -10,4 +10,8 @@ export class MessageService {
     async fetchConversation(senderId: string, receiverId: string) {
         return this.messageRepo.getConversation(senderId, receiverId);
     }
+
+    async getUserConversations(userId: string) {
+        return this.messageRepo.getUserConversations(userId);
+    }
 }

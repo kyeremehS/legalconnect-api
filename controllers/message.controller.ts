@@ -78,4 +78,34 @@ export class MessageController {
             });
         }
     }
+
+    async getUserConversations(req: Request, res: Response) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Authentication required"
+                });
+            }
+
+            const userId = req.user.id;
+            console.log('getUserConversations called for user:', userId);
+            console.log('User details:', { id: req.user.id, email: req.user.email, role: req.user.role });
+            
+            const conversations = await messageService.getUserConversations(userId);
+            console.log('Found conversations:', conversations.length);
+            
+            res.status(200).json({
+                success: true,
+                message: "Conversations retrieved successfully",
+                data: conversations
+            });
+        } catch (error) {
+            console.error("Error fetching user conversations:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to fetch conversations"
+            });
+        }
+    }
 }

@@ -13,6 +13,14 @@ router.post("/",
     (req, res) => messageController.send(req, res)
 );
 
+// @route   GET /api/messages/conversations
+// @desc    Get all conversations for the authenticated user
+// @access  Private (Authenticated users)
+router.get("/conversations", 
+    authenticate,
+    (req, res) => messageController.getUserConversations(req, res)
+);
+
 // @route   GET /api/messages/:senderId/:receiverId
 // @desc    Get conversation between two users
 // @access  Private (Authenticated users)
