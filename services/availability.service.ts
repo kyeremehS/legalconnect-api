@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+
+
 export class AvailabilityService {
   // Create availability slots for a lawyer
   async createAvailability(
@@ -324,3 +326,5 @@ export class AvailabilityService {
     });
   }
 }
+  
+
