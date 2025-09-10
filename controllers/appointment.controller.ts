@@ -95,6 +95,26 @@ export class AppointmentController {
 
       const { status, date } = req.query;
       
+      // Validate date format if provided
+      if (date && typeof date === 'string') {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid date format. Expected YYYY-MM-DD'
+          });
+        }
+        
+        // Validate that the date is actually valid
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid date value'
+          });
+        }
+      }
+      
       const appointments = await appointmentService.getLawyerAppointments(
         lawyer.id,
         {

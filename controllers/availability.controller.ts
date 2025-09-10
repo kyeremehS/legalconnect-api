@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { AvailabilityService } from '../services/availability.service';
+import { PrismaClient } from '@prisma/client';
 
 const availabilityService = new AvailabilityService();
+const prisma = new PrismaClient();
 
 export class AvailabilityController {
   // Create availability slot for a lawyer
@@ -205,7 +207,104 @@ export class AvailabilityController {
     }
   }
 
-    // Get all lawyers for testing
+    // Debug: Check user and lawyer relationship
+  async debugUserLawyerInfo(req: Request, res: Response) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const userId = req.user?.id;
+      
+      // Get user info
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true
+        }
+      });
+
+      // Get lawyer record if exists
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { userId },
+        select: {
+          id: true,
+          isVerified: true,
+          isAvailableForBooking: true
+        }
+      });
+
+      // Get appointments for this lawyer if lawyer exists
+      const appointments = lawyer ? await prisma.appointment.findMany({
+        where: { lawyerId: lawyer.id },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true
+        }
+      }) : [];
+
+      res.json({
+        success: true,
+        debug: {
+          tokenExists: !!token,
+          userFromToken: userId,
+          user,
+          lawyer,
+          appointmentsCount: appointments.length,
+          appointments
+        }
+      });
+    } catch (error) {
+      console.error('Error in debug user info:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Debug failed', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  }
+
+  // Debug: Get all appointments in database
+  async debugAllAppointments(req: Request, res: Response) {
+    try {
+      const appointments = await prisma.appointment.findMany({
+        include: {
+          client: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          lawyer: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      res.json({
+        success: true,
+        count: appointments.length,
+        data: appointments
+      });
+    } catch (error) {
+      console.error('Error getting all appointments:', error);
+      res.status(500).json({ success: false, message: 'Failed to get appointments' });
+    }
+  }
+
+  // Get all lawyers for testing
   async getAllLawyers(req: Request, res: Response) {
     try {
       const lawyers = await availabilityService.getAllLawyers();

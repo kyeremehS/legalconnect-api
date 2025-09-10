@@ -184,16 +184,43 @@ export class AvailabilityService {
     // Filter out lawyers who have conflicting appointments
     const availableLawyers = lawyers.filter(lawyer => {
       const hasAvailability = lawyer.availabilitySlots.length > 0;
+      
       const hasConflictingAppointment = lawyer.bookedAppointments.some(appointment => {
-        const appointmentTime = new Date(appointment.startTime).toTimeString().substring(0, 5);
-        const endTime = new Date(appointment.endTime).toTimeString().substring(0, 5);
-        return time >= appointmentTime && time < endTime;
+        // Only check appointments on the same date
+        const appointmentDate = new Date(appointment.startTime).toISOString().split('T')[0];
+        const requestedDate = date;
+        
+        console.log(`📅 Appointment date: ${appointmentDate}, Requested date: ${requestedDate}`);
+        
+        if (appointmentDate !== requestedDate) {
+          console.log(`📅 Different date, no conflict`);
+          return false; // Different date, no conflict
+        }
+        
+        // Check time overlap on the same date
+        const appointmentStartTime = new Date(appointment.startTime).toTimeString().substring(0, 5);
+        const appointmentEndTime = new Date(appointment.endTime).toTimeString().substring(0, 5);
+        
+        console.log(`🕐 Checking appointment: ${appointmentStartTime}-${appointmentEndTime} vs requested: ${time}`);
+        
+        // Check if requested time falls within the appointment time range
+        const conflict = time >= appointmentStartTime && time < appointmentEndTime;
+        
+        if (conflict) {
+          console.log(`⚠️ Time conflict found!`);
+        } else {
+          console.log(`✅ No time conflict`);
+        }
+        
+        return conflict;
       });
 
       console.log(`⚖️ ${lawyer.user.firstName} ${lawyer.user.lastName}:`, {
         hasAvailability,
         hasConflictingAppointment,
-        willBeIncluded: hasAvailability && !hasConflictingAppointment
+        willBeIncluded: hasAvailability && !hasConflictingAppointment,
+        bookedAppointmentsCount: lawyer.bookedAppointments.length,
+        availabilitySlotsCount: lawyer.availabilitySlots.length
       });
 
       return hasAvailability && !hasConflictingAppointment;

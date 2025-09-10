@@ -10,6 +10,8 @@ router.get('/lawyers/available', availabilityController.getAvailableLawyers);
 
 // Testing endpoints
 router.get('/testing/lawyers', availabilityController.getAllLawyers);
+router.get('/testing/appointments', availabilityController.debugAllAppointments);
+router.get('/testing/user-lawyer-info', AuthMiddleware.authenticate, availabilityController.debugUserLawyerInfo);
 router.post('/testing/verify-lawyer/:lawyerId', availabilityController.verifyLawyerForTesting);
 
 // Protected routes that require authentication

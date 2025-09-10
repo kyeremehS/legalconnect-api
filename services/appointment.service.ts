@@ -1,6 +1,9 @@
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { NotificationService } from './notification.service';
 import { AvailabilityService } from './availability.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export class AppointmentService {
   private appointmentRepo = new AppointmentRepository();
@@ -44,27 +47,35 @@ export class AppointmentService {
     }
 
     // Check for existing appointments at this time
-    const conflictingAppointment = await this.appointmentRepo.checkTimeSlotAvailability(
+    const isTimeSlotAvailable = await this.appointmentRepo.checkTimeSlotAvailability(
       transformedData.lawyerId,
       transformedData.startTime.toISOString(),
       transformedData.endTime.toISOString()
     );
 
-    if (conflictingAppointment) {
+    if (!isTimeSlotAvailable) {
       throw new Error('Time slot is already booked');
     }
 
     // Create appointment
     const appointment = await this.appointmentRepo.create(transformedData);
 
-    // Send notification to lawyer
-    await this.notificationService.createNotification({
-      userId: transformedData.lawyerId,
-      title: 'New Appointment Request',
-      message: `You have a new appointment request from ${appointment.client?.firstName} ${appointment.client?.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
-      type: 'APPOINTMENT_REQUEST',
-      data: { appointmentId: appointment.id }
+    // Get lawyer's userId for notification
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { id: transformedData.lawyerId },
+      select: { userId: true }
     });
+    
+    if (lawyer && lawyer.userId) {
+      // Send notification to lawyer
+      await this.notificationService.createNotification({
+        userId: lawyer.userId,
+        title: 'New Appointment Request',
+        message: `You have a new appointment request from ${appointment.client?.firstName} ${appointment.client?.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
+        type: 'APPOINTMENT_REQUEST',
+        data: { appointmentId: appointment.id }
+      });
+    }
 
     return appointment;
   }
