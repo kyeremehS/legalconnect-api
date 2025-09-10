@@ -356,6 +356,8 @@ model Message {
   receiverId String
   senderRole String   // "lawyer" or "user"
   content    String
+  messageType String @default("message") // "message", "call-request", "appointment-request"
+  status     String  @default("active")  // "active", "resolved", "cancelled"
   createdAt  DateTime @default(now())
   readAt     DateTime?
   

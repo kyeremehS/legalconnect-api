@@ -14,4 +14,12 @@ export class MessageService {
     async getUserConversations(userId: string) {
         return this.messageRepo.getUserConversations(userId);
     }
+
+    async getLawyerMessageCalls(lawyerId: string) {
+        return this.messageRepo.getLawyerMessageCalls(lawyerId);
+    }
+
+    async sendCallRequest(senderId: string, lawyerId: string, senderRole: string, content: string, requestType: string) {
+        return this.messageRepo.createCallRequest(senderId, lawyerId, senderRole, content, requestType);
+    }
 }
