@@ -69,12 +69,19 @@ router.get('/testing/client-appointments',
   appointmentController.getClientAppointments.bind(appointmentController)
 );
 
-// Update appointment status with PATCH method
+// Update appointment status with PATCH method (lawyers only)
 router.patch('/:id/status', 
   authenticate, 
   authorize('LAWYER', 'ADMIN'), 
   validateSchema(updateStatusSchema),
   appointmentController.updateAppointmentStatus.bind(appointmentController)
+);
+
+// Client cancellation endpoint (clients can only cancel their own appointments)
+router.patch('/:id/cancel', 
+  authenticate, 
+  authorize('CLIENT'), 
+  appointmentController.cancelClientAppointment.bind(appointmentController)
 );
 
 // Get lawyer availability (Public)

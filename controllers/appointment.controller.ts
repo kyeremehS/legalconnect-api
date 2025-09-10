@@ -180,6 +180,102 @@ export class AppointmentController {
     }
   }
 
+  // Client cancels their own appointment
+  async cancelClientAppointment(req: Request, res: Response) {
+    try {
+      const { id: appointmentId } = req.params;
+      const clientId = req.user?.id;
+
+      if (!clientId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
+
+      // Verify the appointment belongs to this client and is cancellable
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        select: { 
+          id: true, 
+          clientId: true, 
+          status: true,
+          lawyer: {
+            select: {
+              user: {
+                select: { id: true }
+              }
+            }
+          }
+        }
+      });
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Appointment not found'
+        });
+      }
+
+      if (appointment.clientId !== clientId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only cancel your own appointments'
+        });
+      }
+
+      if (appointment.status === 'CANCELLED') {
+        return res.status(400).json({
+          success: false,
+          message: 'Appointment is already cancelled'
+        });
+      }
+
+      if (appointment.status === 'COMPLETED') {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot cancel a completed appointment'
+        });
+      }
+
+      // Update appointment status to CANCELLED
+      const updatedAppointment = await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { status: 'CANCELLED' },
+        include: {
+          client: {
+            select: { firstName: true, lastName: true }
+          }
+        }
+      });
+
+      // Notify the lawyer about cancellation
+      try {
+        await notificationService.createNotification({
+          userId: appointment.lawyer.user.id,
+          title: 'Appointment Cancelled',
+          message: `${updatedAppointment.client?.firstName} ${updatedAppointment.client?.lastName} has cancelled their appointment`,
+          type: 'APPOINTMENT_CANCELLED',
+          data: { appointmentId: updatedAppointment.id }
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send cancellation notification:', notificationError);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Appointment cancelled successfully',
+        data: updatedAppointment
+      });
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to cancel appointment'
+      });
+    }
+  }
+
   // Get lawyer's availability
   async getLawyerAvailability(req: Request, res: Response) {
     try {
