@@ -14,6 +14,13 @@ export class AppointmentController {
       const appointmentData = req.body;
       const clientId = req.user?.id;
       
+      if (!clientId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
+      
       const appointment = await appointmentService.createAppointment({
         ...appointmentData,
         clientId

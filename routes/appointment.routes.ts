@@ -10,7 +10,7 @@ const appointmentController = new AppointmentController();
 // Zod validation schemas
 const createAppointmentSchema = z.object({
   lawyerId: z.string().min(1, 'Lawyer ID is required'),
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().optional(),
   startTime: z.string().datetime('Valid start time is required'),
   endTime: z.string().datetime('Valid end time is required'),
   practiceArea: z.string().optional(),

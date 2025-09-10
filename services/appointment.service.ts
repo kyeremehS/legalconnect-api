@@ -8,17 +8,22 @@ export class AppointmentService {
   private availabilityService = new AvailabilityService();
 
   async createAppointment(appointmentData: any) {
+    // Validate required fields
+    if (!appointmentData.clientId || !appointmentData.lawyerId || !appointmentData.startTime || !appointmentData.endTime) {
+      throw new Error('Missing required fields: clientId, lawyerId, startTime, endTime');
+    }
+
     // Transform and validate the appointment data
     const transformedData = {
       clientId: appointmentData.clientId,
       lawyerId: appointmentData.lawyerId,
-      title: appointmentData.title || `Consultation - ${appointmentData.practiceArea}`,
+      title: appointmentData.title || `Consultation - ${appointmentData.practiceArea || 'General'}`,
       description: appointmentData.description || '',
       startTime: new Date(appointmentData.startTime),
       endTime: new Date(appointmentData.endTime),
       meetingType: appointmentData.meetingType || 'VIRTUAL',
-      practiceArea: appointmentData.practiceArea,
-      duration: appointmentData.duration,
+      practiceArea: appointmentData.practiceArea || '',
+      duration: appointmentData.duration || '60',
       status: 'PENDING'
     };
 
@@ -45,7 +50,7 @@ export class AppointmentService {
       transformedData.endTime.toISOString()
     );
 
-    if (!conflictingAppointment) {
+    if (conflictingAppointment) {
       throw new Error('Time slot is already booked');
     }
 
