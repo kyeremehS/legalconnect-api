@@ -51,12 +51,10 @@ model User {
   
   // Relations (for future expansion)
   clientAppointments   Appointment[] @relation("ClientAppointments")
-  lawyerAppointments   Appointment[] @relation("LawyerAppointments")
   sentMessages         Message[] @relation("SentMessages")
   receivedMessages     Message[] @relation("ReceivedMessages")
   consultations        Consultation[]
   lawyer               Lawyer?
-  availability         LawyerAvailability[] @relation("LawyerAvailability")
   notifications        Notification[]
   
   // Video interactions
@@ -87,42 +85,43 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
-// Future models for relationships
+// Updated Appointment model with lawyer relationship
 model Appointment {
-  id          String   @id @default(cuid())
-  clientId    String
-  lawyerId    String
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  status      AppointmentStatus @default(SCHEDULED)
-  meetingType MeetingType @default(VIRTUAL)
-  meetingLink String?
-  notes       String?
-  practiceArea String?
-  duration    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  clientId      String
+  lawyerId      String
+  title         String
+  description   String?
+  startTime     DateTime
+  endTime       DateTime
+  duration      String?   // e.g., "1 hour", "30 minutes"
+  meetingType   MeetingType @default(VIRTUAL)
+  meetingLink   String?
+  practiceArea  String?
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
-  // Relations
-  client      User     @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
-  lawyer      User     @relation("LawyerAppointments", fields: [lawyerId], references: [id], onDelete: Cascade)
+  client        User     @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  lawyer        Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   
   @@map("appointments")
 }
 
+// Enhanced Lawyer Availability model
 model LawyerAvailability {
-  id        String   @id @default(cuid())
-  lawyerId  String
-  dayOfWeek Int      // 0 = Sunday, 1 = Monday, etc.
-  startTime String   // "09:00"
-  endTime   String   // "17:00"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  lawyerId    String
+  dayOfWeek   Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String   // Format: "09:00"
+  endTime     String   // Format: "17:00"
+  isAvailable Boolean  @default(true)
+  date        DateTime? // For specific date overrides (optional)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  lawyer    User     @relation("LawyerAvailability", fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyer      Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   
   @@unique([lawyerId, dayOfWeek])
   @@map("lawyer_availability")
@@ -225,6 +224,11 @@ model Lawyer {
   specializations String[] // Array of strings for specializations
   languages String[] // Array of strings for languages spoken
   
+  // Availability settings
+  isAvailableForBooking Boolean @default(true)
+  defaultAvailability Json? // JSON object for weekly schedule
+  timeZone String @default("GMT")
+  
   // Verification status
   verificationStatus VerificationStatus @default(PENDING)
   isVerified Boolean @default(false)
@@ -250,6 +254,10 @@ model Lawyer {
   videoLikes       VideoLike[]
   videoComments    VideoComment[]
   videoViews       VideoView[]
+  
+  // Availability relationships
+  availabilitySlots LawyerAvailability[]
+  bookedAppointments Appointment[]
   
   @@map("lawyers")
 }
@@ -367,3 +375,5 @@ model Message {
   
   @@map("messages")
 }
+
+

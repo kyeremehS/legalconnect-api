@@ -9,6 +9,7 @@ import lawyerRegistrationRouter from './routes/lawyer-registration.routes';
 import uploadRouter from './routes/upload.routes';
 import videoInteractionRouter from './routes/video-interaction.routes';
 import messageRouter from './routes/message.routes';
+import availabilityRouter from './routes/availability.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -53,6 +54,7 @@ app.get('/', (req, res) => {
       appointments: '/api/appointments',
       certificates: '/api/certificates',
       messages: '/api/messages',
+      availability: '/api/availability',
       adminVerifications: '/api/admin/verifications',
       health: '/health'
     },
@@ -85,6 +87,7 @@ app.use('/api/appointments', appointmentRouter);
 app.use('/api/certificates', certificateRouter);
 app.use('/api/admin/verifications', adminVerificationRouter);
 app.use('/api/messages', messageRouter);
+app.use('/api/availability', availabilityRouter);
 
 // 404 handler
 app.use('*', (req, res) => {

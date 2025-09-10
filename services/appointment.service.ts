@@ -37,7 +37,7 @@ export class AppointmentService {
     await this.notificationService.createNotification({
       userId: transformedData.lawyerId,
       title: 'New Appointment Request',
-      message: `You have a new appointment request from ${appointment.client.firstName} ${appointment.client.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
+      message: `You have a new appointment request from ${appointment.client?.firstName} ${appointment.client?.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
       type: 'APPOINTMENT_REQUEST',
       data: { appointmentId: appointment.id }
     });
