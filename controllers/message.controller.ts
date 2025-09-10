@@ -6,15 +6,34 @@ const messageService = new MessageService();
 export class MessageController {
     async send(req: Request, res: Response) {
         try {
-            const { senderId, receiverId, senderRole, content } = req.body;
-            
-            // Validate required fields
-            if (!senderId || !receiverId || !senderRole || !content) {
-                return res.status(400).json({
+            // Get authenticated user from middleware
+            if (!req.user) {
+                return res.status(401).json({
                     success: false,
-                    message: "Missing required fields: senderId, receiverId, senderRole, content"
+                    message: "Authentication required"
                 });
             }
+
+            const { receiverId, content } = req.body;
+            
+            // Validate required fields
+            if (!receiverId || !content) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing required fields: receiverId, content"
+                });
+            }
+
+            // Use authenticated user's ID and role
+            const senderId = req.user.id;
+            const senderRole = req.user.role;
+
+            console.log('Sending message:', {
+                senderId,
+                receiverId,
+                senderRole,
+                content: content.substring(0, 50) + '...'
+            });
 
             const message = await messageService.sendMessage(senderId, receiverId, senderRole, content);
             
