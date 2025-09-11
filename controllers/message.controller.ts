@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { MessageService } from "../services/message.service";
+import { io, onlineUsers } from "../index";
 
 const messageService = new MessageService();
 
 export class MessageController {
     async send(req: Request, res: Response) {
         try {
-            // Get authenticated user from middleware
             if (!req.user) {
                 return res.status(401).json({
                     success: false,
@@ -16,7 +16,6 @@ export class MessageController {
 
             const { receiverId, content } = req.body;
 
-            // Validate required fields
             if (!receiverId || !content) {
                 return res.status(400).json({
                     success: false,
@@ -24,7 +23,6 @@ export class MessageController {
                 });
             }
 
-            // Use authenticated user's ID and role
             const senderId = req.user.id;
             const senderRole = req.user.role;
 
@@ -35,7 +33,15 @@ export class MessageController {
                 content: content.substring(0, 50) + '...'
             });
 
+            // Save message in DB
             const message = await messageService.sendMessage(senderId, receiverId, senderRole, content);
+
+            // ✅ Emit to receiver if online
+            const receiverSocketId = onlineUsers.get(receiverId);
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit("newMessage", message);
+                console.log(`Emitted new message to user ${receiverId} via socket ${receiverSocketId}`);
+            }
 
             res.status(201).json({
                 success: true,
@@ -191,7 +197,6 @@ export class MessageController {
 
             const { lawyerId, content, requestType = 'call-request' } = req.body;
 
-            // Validate required fields
             if (!lawyerId) {
                 return res.status(400).json({
                     success: false,
@@ -202,7 +207,6 @@ export class MessageController {
             const senderId = req.user.id;
             const senderRole = req.user.role;
 
-            // Create a call request message with special content format
             const callRequestContent = content || `${req.user.firstName} ${req.user.lastName} is requesting a call consultation.`;
 
             console.log('Sending call request:', {
@@ -213,6 +217,12 @@ export class MessageController {
             });
 
             const message = await messageService.sendCallRequest(senderId, lawyerId, senderRole, callRequestContent, requestType);
+
+            const lawyerSocketId = onlineUsers.get(lawyerId);
+            if (lawyerSocketId) {
+                io.to(lawyerSocketId).emit("newMessage", message);
+                console.log(`Emitted call request to lawyer ${lawyerId} via socket ${lawyerSocketId}`);
+            }
 
             res.status(201).json({
                 success: true,
@@ -227,6 +237,7 @@ export class MessageController {
             });
         }
     }
+
 
     // Get recent messages for dashboard
     async getRecentMessages(req: Request, res: Response) {
