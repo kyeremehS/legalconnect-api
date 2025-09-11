@@ -15,7 +15,7 @@ export class MessageController {
             }
 
             const { receiverId, content } = req.body;
-            
+
             // Validate required fields
             if (!receiverId || !content) {
                 return res.status(400).json({
@@ -36,7 +36,7 @@ export class MessageController {
             });
 
             const message = await messageService.sendMessage(senderId, receiverId, senderRole, content);
-            
+
             res.status(201).json({
                 success: true,
                 message: "Message sent successfully",
@@ -54,7 +54,7 @@ export class MessageController {
     async getConversation(req: Request, res: Response) {
         try {
             const { senderId, receiverId } = req.params;
-            
+
             // Validate required parameters
             if (!senderId || !receiverId) {
                 return res.status(400).json({
@@ -64,7 +64,7 @@ export class MessageController {
             }
 
             const messages = await messageService.fetchConversation(senderId, receiverId);
-            
+
             res.status(200).json({
                 success: true,
                 message: "Conversation retrieved successfully",
@@ -91,10 +91,10 @@ export class MessageController {
             const userId = req.user.id;
             console.log('getUserConversations called for user:', userId);
             console.log('User details:', { id: req.user.id, email: req.user.email, role: req.user.role });
-            
+
             const conversations = await messageService.getUserConversations(userId);
             console.log('Found conversations:', conversations.length);
-            
+
             res.status(200).json({
                 success: true,
                 message: "Conversations retrieved successfully",
@@ -128,7 +128,7 @@ export class MessageController {
 
             const lawyerId = req.user.id;
             console.log('getLawyerMessageCalls called for lawyer:', lawyerId);
-            
+
             const messageCallsData = await messageService.getLawyerMessageCalls(lawyerId);
             console.log('Found message calls data:', messageCallsData.length);
 
@@ -164,7 +164,7 @@ export class MessageController {
                     status: item.activeCallRequest.status
                 } : null
             }));
-            
+
             res.status(200).json({
                 success: true,
                 message: "Lawyer message calls retrieved successfully",
@@ -190,7 +190,7 @@ export class MessageController {
             }
 
             const { lawyerId, content, requestType = 'call-request' } = req.body;
-            
+
             // Validate required fields
             if (!lawyerId) {
                 return res.status(400).json({
@@ -201,7 +201,7 @@ export class MessageController {
 
             const senderId = req.user.id;
             const senderRole = req.user.role;
-            
+
             // Create a call request message with special content format
             const callRequestContent = content || `${req.user.firstName} ${req.user.lastName} is requesting a call consultation.`;
 
@@ -213,7 +213,7 @@ export class MessageController {
             });
 
             const message = await messageService.sendCallRequest(senderId, lawyerId, senderRole, callRequestContent, requestType);
-            
+
             res.status(201).json({
                 success: true,
                 message: "Call request sent successfully",
@@ -232,7 +232,7 @@ export class MessageController {
     async getRecentMessages(req: Request, res: Response) {
         try {
             const userId = req.user?.id;
-            
+
             if (!userId) {
                 return res.status(401).json({
                     success: false,
@@ -243,7 +243,7 @@ export class MessageController {
             // Get recent messages from the message service
             try {
                 const recentMessages = await messageService.getRecentMessages(userId);
-                
+
                 return res.status(200).json({
                     success: true,
                     data: recentMessages
@@ -282,7 +282,7 @@ export class MessageController {
                         }
                     }
                 ];
-                
+
                 return res.status(200).json({
                     success: true,
                     data: mockMessages
