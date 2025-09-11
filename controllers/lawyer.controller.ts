@@ -5,6 +5,7 @@ import { verifyLawyerCertificate } from '../services/certificate.service';
 import { LawyerRepository } from '../repositories/lawyer.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { VideoInteractionService } from '../services/video-interaction.service';
+import prisma from '../prisma/prismaClient';
 
 const lawyerService = new LawyerService();
 const verificationService = new LawyerVerificationService();
@@ -182,37 +183,48 @@ export class LawyerController {
 
     async getAllLawyerVideos(req: Request, res: Response) {
         try {
-            // Get all lawyers with their videos
-            const lawyers = await lawyerRepository.findManyWithVideos();
+            // Get all videos from the videos table with lawyer information
+            const videos = await prisma.video.findMany({
+                include: {
+                    lawyer: {
+                        include: {
+                            user: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
             
-            // Flatten videos with lawyer information and get real like counts
+            // Transform videos with lawyer information and get real interaction stats
             const videosWithStats = await Promise.all(
-                lawyers.flatMap((lawyer: any) => 
-                    lawyer.videoUrl?.map(async (videoUrl: string) => {
-                        // Get real like count for this video
-                        const stats = await videoInteractionService.getVideoStats(
-                            lawyer.id,
-                            videoUrl
-                        );
+                videos.map(async (video) => {
+                    // Get real interaction stats for this video using the proper video ID
+                    const stats = await videoInteractionService.getVideoStats(video.id);
 
-                        return {
-                            id: `${lawyer.id}_${videoUrl}`,
-                            url: videoUrl,
-                            lawyer: {
-                                id: lawyer.id,
-                                name: lawyer.user?.fullName || `${lawyer.user?.firstName} ${lawyer.user?.lastName}`,
-                                firm: lawyer.firm,
-                                practiceAreas: lawyer.practiceAreas
-                            },
-                            // Use real view count and like count separately
-                            views: stats.viewCount,
-                            likes: stats.likeCount,
-                            comments: stats.commentCount,
-                            duration: "3:45", // Default duration - can be enhanced later
-                            uploadedAt: new Date()
-                        };
-                    }) || []
-                )
+                    return {
+                        id: video.id, // Use the actual video database ID
+                        title: video.title,
+                        description: video.description,
+                        url: video.url,
+                        category: video.category,
+                        language: video.language,
+                        tags: video.tags,
+                        lawyer: {
+                            id: video.lawyer.id,
+                            name: video.lawyer.user?.fullName || `${video.lawyer.user?.firstName} ${video.lawyer.user?.lastName}`,
+                            firm: video.lawyer.firm,
+                            practiceAreas: video.lawyer.practiceAreas
+                        },
+                        // Use real interaction counts
+                        views: stats.viewCount,
+                        likes: stats.likeCount,
+                        comments: stats.commentCount,
+                        duration: video.duration || "3:45", // Use actual duration or default
+                        uploadedAt: video.createdAt
+                    };
+                })
             );
 
             res.json({
