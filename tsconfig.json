@@ -21,7 +21,7 @@
     "emitDecoratorMetadata": true,
 
     "typeRoots": ["./node_modules/@types", "./types"],
-    "types": ["node", "express"]   // 👈 add this line
+    "types": ["node"]
   },
   "include": [
     "**/*.ts",
