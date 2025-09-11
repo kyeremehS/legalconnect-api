@@ -29,6 +29,12 @@ router.post('/lawyer/:lawyerId/video',
   uploadController.uploadVideoIntro.bind(uploadController)
 );
 
+// Video upload with metadata (title, description, tags, etc.)
+router.post('/lawyer/:lawyerId/video-with-metadata',
+  videoUpload.single('video'),
+  uploadController.uploadVideoWithMetadata.bind(uploadController)
+);
+
 // Delete document
 router.delete('/lawyer/:lawyerId/document/:documentType',
   uploadController.deleteDocument.bind(uploadController)

@@ -250,6 +250,9 @@ model Lawyer {
   
   verification LawyerVerification?
   
+  // Video content
+  videos           Video[]
+  
   // Video interactions
   videoLikes       VideoLike[]
   videoComments    VideoComment[]
@@ -310,18 +313,57 @@ model LawyerVerification {
   @@map("lawyer_verifications")
 }
 
+// Video content model for lawyer educational content
+model Video {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  category    String      @default("General")
+  language    String      @default("English")
+  tags        String[]    @default([])
+  url         String      // S3 URL
+  key         String      // S3 key for deletion
+  duration    String?     @default("0:00") // e.g., "15:30"
+  thumbnail   String?     // Thumbnail image URL
+  views       Int         @default(0)
+  status      VideoStatus @default(ACTIVE)
+  
+  // Relations
+  lawyerId    String
+  lawyer      Lawyer      @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Interactions (updating existing models to reference video ID)
+  likes       VideoLike[]
+  comments    VideoComment[]
+  videoViews  VideoView[]
+  
+  @@map("videos")
+}
+
+enum VideoStatus {
+  ACTIVE
+  INACTIVE
+  PROCESSING
+  FAILED
+}
+
 model VideoLike {
   id        String   @id @default(cuid())
   userId    String
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   // Ensure a user can only like a video once
-  @@unique([userId, lawyerId, videoUrl])
+  @@unique([userId, videoId])
   @@map("video_likes")
 }
 
@@ -329,13 +371,14 @@ model VideoComment {
   id        String   @id @default(cuid())
   userId    String
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   @@map("video_comments")
 }
@@ -344,7 +387,7 @@ model VideoView {
   id        String   @id @default(cuid())
   userId    String?  // Optional - anonymous views are allowed
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   viewedAt  DateTime @default(now())
   
   // Track view duration for analytics (optional)
@@ -352,6 +395,7 @@ model VideoView {
   
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   // Allow multiple views from same user but track each view separately
   @@map("video_views")

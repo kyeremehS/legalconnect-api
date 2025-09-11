@@ -136,4 +136,11 @@ router.get('/lawyer/recent-activities',
   appointmentController.getLawyerRecentActivities.bind(appointmentController)
 );
 
+// Get client upcoming appointments (Client only)
+router.get('/client/upcoming', 
+  authenticate, 
+  authorize('CLIENT'),
+  appointmentController.getClientUpcomingAppointments.bind(appointmentController)
+);
+
 export default router;

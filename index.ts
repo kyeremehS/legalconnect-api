@@ -10,6 +10,7 @@ import uploadRouter from './routes/upload.routes';
 import videoInteractionRouter from './routes/video-interaction.routes';
 import messageRouter from './routes/message.routes';
 import availabilityRouter from './routes/availability.routes';
+import publicRouter from './routes/public.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -88,6 +89,7 @@ app.use('/api/certificates', certificateRouter);
 app.use('/api/admin/verifications', adminVerificationRouter);
 app.use('/api/messages', messageRouter);
 app.use('/api/availability', availabilityRouter);
+app.use('/api/public', publicRouter);
 
 // 404 handler
 app.use('*', (req, res) => {

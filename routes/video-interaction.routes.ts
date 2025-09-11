@@ -81,18 +81,18 @@ router.get('/test-like-real', async (req, res) => {
     // Use real IDs from the database
     const realUserId = 'cmf5fd81h000094yk9hpannun'; // Samuel Kyeremeh (CLIENT)
     const realLawyerId = 'cmebptmg00002940ootz16ivm'; // Abena & Associates
-    const testVideoUrl = 'test-video.mp4';
+    const testVideoId = 'test-video-id';
     
     console.log('Calling real toggle service with real IDs:', { 
       realUserId, 
       realLawyerId, 
-      testVideoUrl 
+      testVideoId 
     });
     
-    const result = await videoInteractionService.toggleLike(
+    const result = await videoInteractionService.toggleVideoLike(
       realUserId, 
       realLawyerId, 
-      testVideoUrl
+      testVideoId
     );
     
     console.log('Service returned:', result);
@@ -104,7 +104,7 @@ router.get('/test-like-real', async (req, res) => {
       debug: {
         userId: realUserId,
         lawyerId: realLawyerId,
-        videoUrl: testVideoUrl
+        videoId: testVideoId
       }
     });
     
@@ -127,21 +127,21 @@ router.post('/test-like', async (req, res) => {
   try {
     // Call the real service with test data
     const testUserId = 'test-user-123';
-    const { lawyerId, videoUrl } = req.body;
+    const { lawyerId, videoId } = req.body;
     
-    if (!lawyerId || !videoUrl) {
-      console.log('Missing lawyerId or videoUrl');
+    if (!lawyerId || !videoId) {
+      console.log('Missing lawyerId or videoId');
       return res.status(400).json({
         success: false,
-        message: 'lawyerId and videoUrl are required'
+        message: 'lawyerId and videoId are required'
       });
     }
 
     console.log('Calling real toggle service...');
-    const result = await videoInteractionService.toggleLike(
+    const result = await videoInteractionService.toggleVideoLike(
       testUserId, 
       lawyerId, 
-      videoUrl
+      videoId
     );
     
     console.log('Service returned:', result);

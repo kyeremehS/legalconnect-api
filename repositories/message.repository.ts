@@ -240,4 +240,56 @@ export class MessageRepository {
         
         return result;
     }
+
+    async getRecentMessages(userId: string) {
+        try {
+            // Get recent messages where user is either sender or receiver
+            const recentMessages = await prisma.message.findMany({
+                where: {
+                    OR: [
+                        { senderId: userId },
+                        { receiverId: userId }
+                    ],
+                    messageType: "message" // Only regular messages, not call requests
+                },
+                include: {
+                    sender: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    },
+                    receiver: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                take: 5 // Get 5 most recent messages
+            });
+
+            // Transform messages to include sender info and read status
+            return recentMessages.map(message => ({
+                id: message.id,
+                content: message.content,
+                createdAt: message.createdAt.toISOString(),
+                isRead: true, // Default to true for now
+                sender: message.senderId === userId 
+                    ? { firstName: 'You', lastName: '' }
+                    : {
+                        firstName: message.sender.firstName || 'Unknown',
+                        lastName: message.sender.lastName || ''
+                    }
+            }));
+        } catch (error) {
+            console.error('Error fetching recent messages:', error);
+            throw error;
+        }
+    }
 }

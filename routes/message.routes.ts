@@ -104,4 +104,12 @@ router.post("/test/sample-data/:lawyerId",
     }
 );
 
+// @route   GET /api/messages/recent
+// @desc    Get recent messages for dashboard
+// @access  Private (Authenticated users)
+router.get("/recent", 
+    authenticate,
+    (req, res) => messageController.getRecentMessages(req, res)
+);
+
 export default router;

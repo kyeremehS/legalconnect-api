@@ -22,4 +22,8 @@ export class MessageService {
     async sendCallRequest(senderId: string, lawyerId: string, senderRole: string, content: string, requestType: string) {
         return this.messageRepo.createCallRequest(senderId, lawyerId, senderRole, content, requestType);
     }
+
+    async getRecentMessages(userId: string) {
+        return this.messageRepo.getRecentMessages(userId);
+    }
 }

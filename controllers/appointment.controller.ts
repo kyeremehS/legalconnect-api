@@ -584,4 +584,58 @@ export class AppointmentController {
       });
     }
   }
+
+  // Get client's upcoming appointments for dashboard
+  async getClientUpcomingAppointments(req: Request, res: Response) {
+    try {
+      const clientId = req.user?.id;
+      
+      if (!clientId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
+      
+      const upcomingAppointments = await prisma.appointment.findMany({
+        where: {
+          clientId: clientId,
+          status: {
+            in: ['PENDING', 'CONFIRMED']
+          },
+          startTime: {
+            gte: new Date()
+          }
+        },
+        include: {
+          lawyer: {
+            select: {
+              practiceAreas: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          startTime: 'asc'
+        },
+        take: 5
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: upcomingAppointments
+      });
+    } catch (error) {
+      console.error('Error fetching upcoming appointments:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch upcoming appointments'
+      });
+    }
+  }
 }

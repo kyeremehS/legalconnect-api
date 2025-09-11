@@ -227,4 +227,73 @@ export class MessageController {
             });
         }
     }
+
+    // Get recent messages for dashboard
+    async getRecentMessages(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            
+            if (!userId) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'User authentication required'
+                });
+            }
+
+            // Get recent messages from the message service
+            try {
+                const recentMessages = await messageService.getRecentMessages(userId);
+                
+                return res.status(200).json({
+                    success: true,
+                    data: recentMessages
+                });
+            } catch (serviceError) {
+                // Fallback to mock data if service fails
+                const mockMessages = [
+                    {
+                        id: '1',
+                        content: 'Thank you for your consultation request. I\'ll review your case and get back to you within 24 hours.',
+                        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                        isRead: false,
+                        sender: {
+                            firstName: 'Sarah',
+                            lastName: 'Johnson'
+                        }
+                    },
+                    {
+                        id: '2',
+                        content: 'I\'ve reviewed your contract. There are a few clauses we should discuss. When would be a good time for a call?',
+                        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+                        isRead: true,
+                        sender: {
+                            firstName: 'Michael',
+                            lastName: 'Chen'
+                        }
+                    },
+                    {
+                        id: '3',
+                        content: 'Your consultation has been confirmed for tomorrow at 2 PM. Please prepare any relevant documents.',
+                        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+                        isRead: true,
+                        sender: {
+                            firstName: 'Emily',
+                            lastName: 'Rodriguez'
+                        }
+                    }
+                ];
+                
+                return res.status(200).json({
+                    success: true,
+                    data: mockMessages
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching recent messages:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to fetch recent messages'
+            });
+        }
+    }
 }

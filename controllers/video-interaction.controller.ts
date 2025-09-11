@@ -19,28 +19,28 @@ export class VideoInteractionController {
         user: (req as any).user?.id
       });
 
-      const { lawyerId, videoUrl } = req.body;
+      const { videoId, lawyerId } = req.body;
       const userId = (req as any).user?.id;
 
-      console.log('Extracted parameters:', { userId, lawyerId, videoUrl });
+      console.log('Extracted parameters:', { userId, lawyerId, videoId });
 
       if (!userId) {
         console.log('ERROR: No userId found');
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      if (!lawyerId || !videoUrl) {
-        console.log('ERROR: Missing parameters', { lawyerId: !!lawyerId, videoUrl: !!videoUrl });
-        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      if (!lawyerId || !videoId) {
+        console.log('ERROR: Missing parameters', { lawyerId: !!lawyerId, videoId: !!videoId });
+        return res.status(400).json({ error: 'lawyerId and videoId are required' });
       }
 
-      console.log('Processing like toggle:', { userId, lawyerId, videoUrl });
+      console.log('Processing like toggle:', { userId, lawyerId, videoId });
 
       try {
-        const result = await this.videoInteractionService.toggleLike(
+        const result = await this.videoInteractionService.toggleVideoLike(
           userId,
           lawyerId,
-          videoUrl
+          videoId
         );
 
         console.log('Service result:', result);
@@ -68,15 +68,15 @@ export class VideoInteractionController {
   // Add a comment to a video
   addComment = async (req: Request, res: Response) => {
     try {
-      const { lawyerId, videoUrl, content } = req.body;
+      const { lawyerId, videoId, content } = req.body;
       const userId = (req as any).user?.id;
 
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      if (!lawyerId || !videoUrl) {
-        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      if (!lawyerId || !videoId) {
+        return res.status(400).json({ error: 'lawyerId and videoId are required' });
       }
 
       if (!content || content.trim().length === 0) {
@@ -86,7 +86,7 @@ export class VideoInteractionController {
       const comment = await this.videoInteractionService.addComment(
         userId,
         lawyerId,
-        videoUrl,
+        videoId,
         content.trim()
       );
 
@@ -106,17 +106,16 @@ export class VideoInteractionController {
   // Get comments for a video
   getComments = async (req: Request, res: Response) => {
     try {
-      const { lawyerId, videoUrl } = req.query;
+      const { videoId } = req.query;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      if (!lawyerId || !videoUrl) {
-        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      if (!videoId) {
+        return res.status(400).json({ error: 'videoId is required' });
       }
 
       const comments = await this.videoInteractionService.getComments(
-        lawyerId as string,
-        videoUrl as string,
+        videoId as string,
         page,
         limit
       );
@@ -144,19 +143,18 @@ export class VideoInteractionController {
         user: (req as any).user?.id
       });
 
-      const { lawyerId, videoUrl } = req.query;
+      const { videoId } = req.query;
       const userId = (req as any).user?.id;
 
-      if (!lawyerId || !videoUrl) {
-        console.log('Missing parameters:', { lawyerId, videoUrl });
-        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      if (!videoId) {
+        console.log('Missing parameters:', { videoId });
+        return res.status(400).json({ error: 'videoId is required' });
       }
 
-      console.log('Fetching stats for:', { lawyerId, videoUrl, userId });
+      console.log('Fetching stats for:', { videoId, userId });
 
       const stats = await this.videoInteractionService.getVideoStats(
-        lawyerId as string,
-        videoUrl as string,
+        videoId as string,
         userId
       );
 
@@ -213,19 +211,19 @@ export class VideoInteractionController {
   // Record a video view
   recordVideoView = async (req: Request, res: Response) => {
     try {
-      const { lawyerId, videoUrl, duration } = req.body;
+      const { lawyerId, videoId, duration } = req.body;
       const userId = (req as any).user?.id; // Optional - can be anonymous
 
-      if (!lawyerId || !videoUrl) {
-        return res.status(400).json({ error: 'lawyerId and videoUrl are required' });
+      if (!lawyerId || !videoId) {
+        return res.status(400).json({ error: 'lawyerId and videoId are required' });
       }
 
-      console.log('Recording video view:', { lawyerId, videoUrl, userId, duration });
+      console.log('Recording video view:', { lawyerId, videoId, userId, duration });
 
-      const result = await this.videoInteractionService.recordVideoView(
-        lawyerId,
-        videoUrl,
+      const result = await this.videoInteractionService.recordView(
         userId,
+        lawyerId,
+        videoId,
         duration
       );
 
