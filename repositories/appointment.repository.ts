@@ -19,10 +19,15 @@ export class AppointmentRepository {
         lawyer: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatar: true
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true
+              }
+            }
           }
         }
       }
@@ -45,10 +50,15 @@ export class AppointmentRepository {
         lawyer: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatar: true
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true
+              }
+            }
           }
         }
       }
@@ -72,10 +82,15 @@ export class AppointmentRepository {
         lawyer: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatar: true
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true
+              }
+            }
           }
         }
       }
@@ -133,10 +148,15 @@ export class AppointmentRepository {
         lawyer: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatar: true
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true
+              }
+            }
           }
         }
       },
@@ -182,7 +202,7 @@ export class AppointmentRepository {
         }
       });
 
-      if (!availability || !availability.isActive) {
+      if (!availability || !availability.isAvailable) {
         return null;
       }
 

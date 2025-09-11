@@ -51,11 +51,10 @@ model User {
   
   // Relations (for future expansion)
   clientAppointments   Appointment[] @relation("ClientAppointments")
-  lawyerAppointments   Appointment[] @relation("LawyerAppointments")
-  messages             Message[]
+  sentMessages         Message[] @relation("SentMessages")
+  receivedMessages     Message[] @relation("ReceivedMessages")
   consultations        Consultation[]
   lawyer               Lawyer?
-  availability         LawyerAvailability[] @relation("LawyerAvailability")
   notifications        Notification[]
   
   // Video interactions
@@ -86,42 +85,43 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
-// Future models for relationships
+// Updated Appointment model with lawyer relationship
 model Appointment {
-  id          String   @id @default(cuid())
-  clientId    String
-  lawyerId    String
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  status      AppointmentStatus @default(SCHEDULED)
-  meetingType MeetingType @default(VIRTUAL)
-  meetingLink String?
-  notes       String?
-  practiceArea String?
-  duration    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  clientId      String
+  lawyerId      String
+  title         String
+  description   String?
+  startTime     DateTime
+  endTime       DateTime
+  duration      String?   // e.g., "1 hour", "30 minutes"
+  meetingType   MeetingType @default(VIRTUAL)
+  meetingLink   String?
+  practiceArea  String?
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
-  // Relations
-  client      User     @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
-  lawyer      User     @relation("LawyerAppointments", fields: [lawyerId], references: [id], onDelete: Cascade)
+  client        User     @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  lawyer        Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   
   @@map("appointments")
 }
 
+// Enhanced Lawyer Availability model
 model LawyerAvailability {
-  id        String   @id @default(cuid())
-  lawyerId  String
-  dayOfWeek Int      // 0 = Sunday, 1 = Monday, etc.
-  startTime String   // "09:00"
-  endTime   String   // "17:00"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  lawyerId    String
+  dayOfWeek   Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   String   // Format: "09:00"
+  endTime     String   // Format: "17:00"
+  isAvailable Boolean  @default(true)
+  date        DateTime? // For specific date overrides (optional)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  lawyer    User     @relation("LawyerAvailability", fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyer      Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   
   @@unique([lawyerId, dayOfWeek])
   @@map("lawyer_availability")
@@ -142,16 +142,6 @@ model Notification {
   @@map("notifications")
 }
 
-model Message {
-  id        String   @id @default(cuid())
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  content   String
-  isRead    Boolean  @default(false)
-  sentAt    DateTime @default(now())
-  
-  @@map("messages")
-}
 
 model Consultation {
   id          String   @id @default(cuid())
@@ -234,6 +224,11 @@ model Lawyer {
   specializations String[] // Array of strings for specializations
   languages String[] // Array of strings for languages spoken
   
+  // Availability settings
+  isAvailableForBooking Boolean @default(true)
+  defaultAvailability Json? // JSON object for weekly schedule
+  timeZone String @default("GMT")
+  
   // Verification status
   verificationStatus VerificationStatus @default(PENDING)
   isVerified Boolean @default(false)
@@ -255,10 +250,17 @@ model Lawyer {
   
   verification LawyerVerification?
   
+  // Video content
+  videos           Video[]
+  
   // Video interactions
   videoLikes       VideoLike[]
   videoComments    VideoComment[]
   videoViews       VideoView[]
+  
+  // Availability relationships
+  availabilitySlots LawyerAvailability[]
+  bookedAppointments Appointment[]
   
   @@map("lawyers")
 }
@@ -311,18 +313,57 @@ model LawyerVerification {
   @@map("lawyer_verifications")
 }
 
+// Video content model for lawyer educational content
+model Video {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  category    String      @default("General")
+  language    String      @default("English")
+  tags        String[]    @default([])
+  url         String      // S3 URL
+  key         String      // S3 key for deletion
+  duration    String?     @default("0:00") // e.g., "15:30"
+  thumbnail   String?     // Thumbnail image URL
+  views       Int         @default(0)
+  status      VideoStatus @default(ACTIVE)
+  
+  // Relations
+  lawyerId    String
+  lawyer      Lawyer      @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Interactions (updating existing models to reference video ID)
+  likes       VideoLike[]
+  comments    VideoComment[]
+  videoViews  VideoView[]
+  
+  @@map("videos")
+}
+
+enum VideoStatus {
+  ACTIVE
+  INACTIVE
+  PROCESSING
+  FAILED
+}
+
 model VideoLike {
   id        String   @id @default(cuid())
   userId    String
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   // Ensure a user can only like a video once
-  @@unique([userId, lawyerId, videoUrl])
+  @@unique([userId, videoId])
   @@map("video_likes")
 }
 
@@ -330,13 +371,14 @@ model VideoComment {
   id        String   @id @default(cuid())
   userId    String
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   @@map("video_comments")
 }
@@ -345,7 +387,7 @@ model VideoView {
   id        String   @id @default(cuid())
   userId    String?  // Optional - anonymous views are allowed
   lawyerId  String
-  videoUrl  String   // The S3 URL of the video
+  videoId   String   // Reference to Video model
   viewedAt  DateTime @default(now())
   
   // Track view duration for analytics (optional)
@@ -353,7 +395,29 @@ model VideoView {
   
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   
   // Allow multiple views from same user but track each view separately
   @@map("video_views")
 }
+
+// Adding Message model
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  senderRole String   // "lawyer" or "user"
+  content    String
+  messageType String @default("message") // "message", "call-request", "appointment-request"
+  status     String  @default("active")  // "active", "resolved", "cancelled"
+  createdAt  DateTime @default(now())
+  readAt     DateTime?
+  
+  // Relations
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+}
+
+

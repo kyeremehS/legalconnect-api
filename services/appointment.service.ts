@@ -1,46 +1,81 @@
 import { AppointmentRepository } from '../repositories/appointment.repository';
 import { NotificationService } from './notification.service';
+import { AvailabilityService } from './availability.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export class AppointmentService {
   private appointmentRepo = new AppointmentRepository();
   private notificationService = new NotificationService();
+  private availabilityService = new AvailabilityService();
 
   async createAppointment(appointmentData: any) {
+    // Validate required fields
+    if (!appointmentData.clientId || !appointmentData.lawyerId || !appointmentData.startTime || !appointmentData.endTime) {
+      throw new Error('Missing required fields: clientId, lawyerId, startTime, endTime');
+    }
+
     // Transform and validate the appointment data
     const transformedData = {
       clientId: appointmentData.clientId,
       lawyerId: appointmentData.lawyerId,
-      title: appointmentData.title,
+      title: appointmentData.title || `Consultation - ${appointmentData.practiceArea || 'General'}`,
       description: appointmentData.description || '',
       startTime: new Date(appointmentData.startTime),
       endTime: new Date(appointmentData.endTime),
       meetingType: appointmentData.meetingType || 'VIRTUAL',
-      practiceArea: appointmentData.practiceArea,
-      duration: appointmentData.duration
+      practiceArea: appointmentData.practiceArea || '',
+      duration: appointmentData.duration || '60',
+      status: 'PENDING'
     };
 
-    // Validate time slot availability
-    const isAvailable = await this.appointmentRepo.checkTimeSlotAvailability(
+    // Check availability using the availability service
+    const dayOfWeek = transformedData.startTime.getDay();
+    const timeStr = transformedData.startTime.toTimeString().substring(0, 5);
+    const dateStr = transformedData.startTime.toISOString().split('T')[0];
+
+    const isAvailable = await this.availabilityService.checkAvailability(
+      transformedData.lawyerId,
+      dayOfWeek,
+      timeStr,
+      dateStr
+    );
+
+    if (!isAvailable) {
+      throw new Error('Lawyer is not available at the selected time');
+    }
+
+    // Check for existing appointments at this time
+    const isTimeSlotAvailable = await this.appointmentRepo.checkTimeSlotAvailability(
       transformedData.lawyerId,
       transformedData.startTime.toISOString(),
       transformedData.endTime.toISOString()
     );
 
-    if (!isAvailable) {
-      throw new Error('Time slot is not available');
+    if (!isTimeSlotAvailable) {
+      throw new Error('Time slot is already booked');
     }
 
     // Create appointment
     const appointment = await this.appointmentRepo.create(transformedData);
 
-    // Send notification to lawyer
-    await this.notificationService.createNotification({
-      userId: transformedData.lawyerId,
-      title: 'New Appointment Request',
-      message: `You have a new appointment request from ${appointment.client.firstName} ${appointment.client.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
-      type: 'APPOINTMENT_REQUEST',
-      data: { appointmentId: appointment.id }
+    // Get lawyer's userId for notification
+    const lawyer = await prisma.lawyer.findUnique({
+      where: { id: transformedData.lawyerId },
+      select: { userId: true }
     });
+    
+    if (lawyer && lawyer.userId) {
+      // Send notification to lawyer
+      await this.notificationService.createNotification({
+        userId: lawyer.userId,
+        title: 'New Appointment Request',
+        message: `You have a new appointment request from ${appointment.client?.firstName} ${appointment.client?.lastName} for ${transformedData.startTime.toLocaleDateString()}`,
+        type: 'APPOINTMENT_REQUEST',
+        data: { appointmentId: appointment.id }
+      });
+    }
 
     return appointment;
   }

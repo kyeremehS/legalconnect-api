@@ -10,7 +10,7 @@ const appointmentController = new AppointmentController();
 // Zod validation schemas
 const createAppointmentSchema = z.object({
   lawyerId: z.string().min(1, 'Lawyer ID is required'),
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().optional(),
   startTime: z.string().datetime('Valid start time is required'),
   endTime: z.string().datetime('Valid end time is required'),
   practiceArea: z.string().optional(),
@@ -50,17 +50,38 @@ router.put('/:id/status',
 );
 
 // Get lawyer's appointments (Lawyer/Admin only)
-router.get('/lawyer/my-appointments', 
+router.get('/lawyer', 
   authenticate, 
   authorize('LAWYER', 'ADMIN'),
   appointmentController.getLawyerAppointments.bind(appointmentController)
 );
 
 // Get client's appointments (Client only)
-router.get('/client/my-appointments', 
+router.get('/client', 
   authenticate, 
   authorize('CLIENT'),
   appointmentController.getClientAppointments.bind(appointmentController)
+);
+
+// Testing endpoint for client appointments (no role restriction)
+router.get('/testing/client-appointments', 
+  authenticate,
+  appointmentController.getClientAppointments.bind(appointmentController)
+);
+
+// Update appointment status with PATCH method (lawyers only)
+router.patch('/:id/status', 
+  authenticate, 
+  authorize('LAWYER', 'ADMIN'), 
+  validateSchema(updateStatusSchema),
+  appointmentController.updateAppointmentStatus.bind(appointmentController)
+);
+
+// Client cancellation endpoint (clients can only cancel their own appointments)
+router.patch('/:id/cancel', 
+  authenticate, 
+  authorize('CLIENT'), 
+  appointmentController.cancelClientAppointment.bind(appointmentController)
 );
 
 // Get lawyer availability (Public)
@@ -99,6 +120,27 @@ router.get('/user/notifications',
 router.put('/notifications/:id/read', 
   authenticate,
   appointmentController.markNotificationAsRead.bind(appointmentController)
+);
+
+// Get lawyer dashboard statistics (Lawyer only)
+router.get('/lawyer/stats', 
+  authenticate, 
+  authorize('LAWYER'),
+  appointmentController.getLawyerStats.bind(appointmentController)
+);
+
+// Get lawyer recent activities (Lawyer only)
+router.get('/lawyer/recent-activities', 
+  authenticate, 
+  authorize('LAWYER'),
+  appointmentController.getLawyerRecentActivities.bind(appointmentController)
+);
+
+// Get client upcoming appointments (Client only)
+router.get('/client/upcoming', 
+  authenticate, 
+  authorize('CLIENT'),
+  appointmentController.getClientUpcomingAppointments.bind(appointmentController)
 );
 
 export default router;

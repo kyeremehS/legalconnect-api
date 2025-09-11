@@ -247,6 +247,113 @@ export class UploadController {
   }
 
   /**
+   * Upload video content with metadata (title, description, tags, etc.)
+   */
+  async uploadVideoWithMetadata(req: Request, res: Response) {
+    try {
+      const { lawyerId } = req.params;
+      const file = req.file;
+      const { title, description, category, language, tags } = req.body;
+
+      console.log('📹 Video upload with metadata for lawyer:', lawyerId);
+      console.log('📹 Metadata received:', { title, description, category, language, tags });
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No video file provided'
+        });
+      }
+
+      if (!lawyerId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Lawyer ID is required'
+        });
+      }
+
+      if (!title || !description) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title and description are required'
+        });
+      }
+
+      // Check if lawyer exists
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { id: lawyerId }
+      });
+
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer not found'
+        });
+      }
+
+      // Upload video to S3
+      const uploadResult = await this.uploadService.uploadVideo(file, lawyerId);
+
+      if (!uploadResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload video',
+          error: uploadResult.error
+        });
+      }
+
+      // Parse tags if it's a string
+      let parsedTags = [];
+      try {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags || [];
+      } catch (error) {
+        console.warn('Failed to parse tags:', error);
+        parsedTags = [];
+      }
+
+      // Save video metadata to database
+      const videoRecord = await prisma.video.create({
+        data: {
+          title,
+          description,
+          category: category || 'General',
+          language: language || 'English',
+          tags: parsedTags,
+          url: uploadResult.url ?? '',
+          key: uploadResult.key ?? '',
+          lawyerId: lawyerId,
+          status: 'ACTIVE',
+          views: 0,
+          duration: '0:00', // Will be updated when video is processed
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Video uploaded successfully with metadata',
+        data: {
+          videoId: videoRecord.id,
+          url: uploadResult.url,
+          key: uploadResult.key,
+          title,
+          description,
+          category,
+          language,
+          tags: parsedTags
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Video upload with metadata error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Video upload failed',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
+
+  /**
    * Upload profile photo
    */
   async uploadProfilePhoto(req: Request, res: Response) {

@@ -4,6 +4,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf dist",
+    "build:clean": "npm run clean && npm run build",
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,27 +15,33 @@
     "@aws-sdk/client-s3": "^3.884.0",
     "@aws-sdk/s3-request-presigner": "^3.884.0",
     "@prisma/client": "^6.15.0",
+    "@types/node": "^22.18.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^4.19.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "socket.io": "^4.8.1",
+    "typescript": "^5.5.4",
     "uuid": "^9.0.0",
     "xlsx": "^0.18.5",
     "zod": "^4.0.15"
   },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.21",
+    "@types/express": "^4.17.23",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^22.5.0",
+    "@types/socket.io": "^3.0.1",
     "@types/uuid": "^10.0.0",
     "@types/xlsx": "^0.0.36",
     "nodemon": "^3.1.10",
     "prisma": "^6.15.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "ts-node": "^10.9.2"
   }
 }

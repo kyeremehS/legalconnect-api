@@ -1,14 +1,6 @@
-// TypeScript declaration file for Express with Multer support
-import { Request } from 'express';
-import { File } from 'multer';
-
+// Global type declarations
 declare global {
   namespace Express {
-    interface Request {
-      file?: File;
-      files?: File[] | { [fieldname: string]: File[] };
-    }
-    
     namespace Multer {
       interface File {
         fieldname: string;
