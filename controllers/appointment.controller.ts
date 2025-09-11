@@ -418,4 +418,170 @@ export class AppointmentController {
       });
     }
   }
+
+  // Get lawyer dashboard statistics
+  async getLawyerStats(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
+
+      // Get lawyer ID from user ID
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { userId: userId }
+      });
+
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found'
+        });
+      }
+
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+
+      // Get current month stats
+      const totalAppointments = await prisma.appointment.count({
+        where: { lawyerId: lawyer.id }
+      });
+
+      const pendingAppointments = await prisma.appointment.count({
+        where: { 
+          lawyerId: lawyer.id,
+          status: 'PENDING' 
+        }
+      });
+
+      const completedAppointments = await prisma.appointment.count({
+        where: { 
+          lawyerId: lawyer.id,
+          status: 'COMPLETED' 
+        }
+      });
+
+      // Get last month stats for comparison
+      const lastMonthTotal = await prisma.appointment.count({
+        where: { 
+          lawyerId: lawyer.id,
+          createdAt: { lt: lastMonth }
+        }
+      });
+
+      const lastMonthCompleted = await prisma.appointment.count({
+        where: { 
+          lawyerId: lawyer.id,
+          status: 'COMPLETED',
+          updatedAt: { lt: lastMonth }
+        }
+      });
+
+      // Calculate changes
+      const totalChange = totalAppointments - lastMonthTotal;
+      const completedChange = completedAppointments - lastMonthCompleted;
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          total: totalAppointments,
+          pending: pendingAppointments,
+          completed: completedAppointments,
+          totalChange: totalChange >= 0 ? `+${totalChange}` : `${totalChange}`,
+          pendingChange: `+0`, // You can implement this logic
+          completedChange: completedChange >= 0 ? `+${completedChange}` : `${completedChange}`
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching lawyer stats:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch statistics'
+      });
+    }
+  }
+
+  // Get lawyer recent activities
+  async getLawyerRecentActivities(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
+
+      // Get lawyer ID from user ID
+      const lawyer = await prisma.lawyer.findUnique({
+        where: { userId: userId }
+      });
+
+      if (!lawyer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lawyer profile not found'
+        });
+      }
+
+      // Get recent appointments (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentAppointments = await prisma.appointment.findMany({
+        where: {
+          lawyerId: lawyer.id,
+          createdAt: { gte: sevenDaysAgo }
+        },
+        include: {
+          client: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      });
+
+      // Get recently completed appointments
+      const completedAppointments = await prisma.appointment.findMany({
+        where: {
+          lawyerId: lawyer.id,
+          status: 'COMPLETED',
+          updatedAt: { gte: sevenDaysAgo }
+        },
+        include: {
+          client: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 3
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          recentAppointments,
+          completedAppointments
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch recent activities'
+      });
+    }
+  }
 }

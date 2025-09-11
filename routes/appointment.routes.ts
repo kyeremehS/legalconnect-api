@@ -122,4 +122,18 @@ router.put('/notifications/:id/read',
   appointmentController.markNotificationAsRead.bind(appointmentController)
 );
 
+// Get lawyer dashboard statistics (Lawyer only)
+router.get('/lawyer/stats', 
+  authenticate, 
+  authorize('LAWYER'),
+  appointmentController.getLawyerStats.bind(appointmentController)
+);
+
+// Get lawyer recent activities (Lawyer only)
+router.get('/lawyer/recent-activities', 
+  authenticate, 
+  authorize('LAWYER'),
+  appointmentController.getLawyerRecentActivities.bind(appointmentController)
+);
+
 export default router;
