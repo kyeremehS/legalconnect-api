@@ -1,28 +1,17 @@
 // TypeScript declaration file for Express with Multer support
-import { Request } from 'express';
-import { File } from 'multer';
+import { Request, Response, NextFunction } from 'express';
 
 declare global {
   namespace Express {
     interface Request {
-      file?: File;
-      files?: File[] | { [fieldname: string]: File[] };
-    }
-    
-    namespace Multer {
-      interface File {
-        fieldname: string;
-        originalname: string;
-        encoding: string;
-        mimetype: string;
-        size: number;
-        destination: string;
-        filename: string;
-        path: string;
-        buffer: Buffer;
-      }
+      file?: Express.Multer.File;
+      files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
     }
   }
 }
+
+// Re-export Express types to make them available
+export { Request, Response, NextFunction } from 'express';
+export { Router } from 'express';
 
 export {};
