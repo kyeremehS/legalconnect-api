@@ -15,11 +15,13 @@
     "@aws-sdk/client-s3": "^3.884.0",
     "@aws-sdk/s3-request-presigner": "^3.884.0",
     "@prisma/client": "^6.15.0",
+    "@types/node": "^22.18.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^4.19.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "typescript": "^5.5.4",
     "uuid": "^9.0.0",
     "xlsx": "^0.18.5",
     "zod": "^4.0.15"
@@ -34,12 +36,10 @@
     "@types/express": "^4.17.23",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^22.18.1",
     "@types/uuid": "^10.0.0",
     "@types/xlsx": "^0.0.36",
     "nodemon": "^3.1.10",
     "prisma": "^6.15.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "ts-node": "^10.9.2"
   }
 }
