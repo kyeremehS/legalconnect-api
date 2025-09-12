@@ -36,7 +36,7 @@ export class MessageController {
             // Save message in DB
             const message = await messageService.sendMessage(senderId, receiverId, senderRole, content);
 
-            // ✅ Emit to receiver if online
+            // Emit to receiver if online
             const receiverSocketId = onlineUsers.get(receiverId);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit("newMessage", message);

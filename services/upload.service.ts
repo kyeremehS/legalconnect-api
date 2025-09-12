@@ -77,7 +77,7 @@ export class UploadService {
 
         if (documentConfig) {
           try {
-            console.log(`📁 Uploading ${fieldName} for lawyer ${lawyerId}`);
+            console.log(`Uploading ${fieldName} for lawyer ${lawyerId}`);
             
             const uploadResult: UploadResult = await uploadLegalDocument(
               file.buffer,
@@ -95,18 +95,18 @@ export class UploadService {
               const currentUrls = currentLawyer[documentConfig.key as keyof typeof currentLawyer] as string[] || [];
               dbUpdates[documentConfig.key] = [...currentUrls, uploadResult.url];
               
-              console.log(`✅ ${fieldName} uploaded successfully: ${uploadResult.url}`);
+              console.log(`${fieldName} uploaded successfully: ${uploadResult.url}`);
             } else {
               result.failed.push(fieldName);
-              console.error(`❌ Failed to upload ${fieldName}:`, uploadResult.error);
+              console.error(`Failed to upload ${fieldName}:`, uploadResult.error);
             }
           } catch (error) {
             result.failed.push(fieldName);
-            console.error(`❌ Error uploading ${fieldName}:`, error);
+            console.error(`Error uploading ${fieldName}:`, error);
           }
         } else {
           result.failed.push(fieldName);
-          console.warn(`⚠️ Unknown document type: ${fieldName}`);
+          console.warn(`Unknown document type: ${fieldName}`);
         }
       }
     }
@@ -118,9 +118,9 @@ export class UploadService {
           where: { id: lawyerId },
           data: dbUpdates
         });
-        console.log(`💾 Database updated with ${Object.keys(dbUpdates).length} document URLs`);
+        console.log(`Database updated with ${Object.keys(dbUpdates).length} document URLs`);
       } catch (error) {
-        console.error('❌ Failed to update database:', error);
+        console.error('Failed to update database:', error);
         // Note: Files are uploaded to S3 but database update failed
       }
     }
@@ -137,7 +137,7 @@ export class UploadService {
     lawyerId: string
   ): Promise<UploadResult> {
     try {
-      console.log(`📄 Uploading single document: ${documentType} for lawyer ${lawyerId}`);
+      console.log(`Uploading single document: ${documentType} for lawyer ${lawyerId}`);
 
       // Verify lawyer exists
       const lawyer = await prisma.lawyer.findUnique({
@@ -201,22 +201,22 @@ export class UploadService {
                   [dbField]: updatedUrls
                 }
               });
-              console.log(`💾 Database updated: ${dbField} array with new URL: ${uploadResult.url}`);
+              console.log(`Database updated: ${dbField} array with new URL: ${uploadResult.url}`);
             }
           } catch (dbError) {
-            console.error('❌ Failed to update database:', dbError);
+            console.error('Failed to update database:', dbError);
             // Note: File uploaded to S3 but database update failed
           }
         }
 
-        console.log(`✅ Document uploaded successfully: ${uploadResult.url}`);
+        console.log(`Document uploaded successfully: ${uploadResult.url}`);
       } else {
-        console.error(`❌ Upload failed: ${uploadResult.error}`);
+        console.error(`Upload failed: ${uploadResult.error}`);
       }
 
       return uploadResult;
     } catch (error) {
-      console.error(`❌ Single document upload error:`, error);
+      console.error(`Single document upload error:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload failed'
@@ -232,7 +232,7 @@ export class UploadService {
     lawyerId: string
   ): Promise<UploadResult> {
     try {
-      console.log(`🎥 Uploading video for lawyer ${lawyerId}`);
+      console.log(`Uploading video for lawyer ${lawyerId}`);
 
       // Validate file size (max 50MB for videos)
       const maxVideoSize = 50 * 1024 * 1024; // 50MB

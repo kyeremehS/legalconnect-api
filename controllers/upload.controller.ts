@@ -17,8 +17,8 @@ export class UploadController {
       const { lawyerId } = req.params;
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-      console.log('📁 Upload request for lawyer:', lawyerId);
-      console.log('📁 Files received:', Object.keys(files));
+      console.log('Upload request for lawyer:', lawyerId);
+      console.log('Files received:', Object.keys(files));
 
       if (!lawyerId) {
         return res.status(400).json({
@@ -63,7 +63,7 @@ export class UploadController {
           data: updateData
         });
 
-        console.log('✅ Lawyer documents updated in database');
+        console.log('Lawyer documents updated in database');
       }
 
       return res.status(200).json({
@@ -77,7 +77,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Document upload error:', error);
+      console.error('Document upload error:', error);
       return res.status(500).json({
         success: false,
         message: 'Document upload failed',
@@ -173,7 +173,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Single document upload error:', error);
+      console.error('Single document upload error:', error);
       return res.status(500).json({
         success: false,
         message: 'Document upload failed',
@@ -255,8 +255,8 @@ export class UploadController {
       const file = req.file;
       const { title, description, category, language, tags } = req.body;
 
-      console.log('📹 Video upload with metadata for lawyer:', lawyerId);
-      console.log('📹 Metadata received:', { title, description, category, language, tags });
+      console.log('Video upload with metadata for lawyer:', lawyerId);
+      console.log('Metadata received:', { title, description, category, language, tags });
 
       if (!file) {
         return res.status(400).json({
@@ -344,7 +344,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Video upload with metadata error:', error);
+      console.error('Video upload with metadata error:', error);
       return res.status(500).json({
         success: false,
         message: 'Video upload failed',
@@ -420,7 +420,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Profile photo upload error:', error);
+      console.error('Profile photo upload error:', error);
       return res.status(500).json({
         success: false,
         message: 'Profile photo upload failed',
@@ -464,7 +464,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Delete document error:', error);
+      console.error('document error:', error);
       return res.status(500).json({
         success: false,
         message: 'Server error',
@@ -537,7 +537,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Get document stats error:', error);
+      console.error('Get document stats error:', error);
       return res.status(500).json({
         success: false,
         message: 'Server error',
@@ -575,7 +575,7 @@ export class UploadController {
       });
 
     } catch (error) {
-      console.error('❌ Presigned URL error:', error);
+      console.error('Presigned URL error:', error);
       return res.status(500).json({
         success: false,
         message: 'Failed to generate presigned URL',

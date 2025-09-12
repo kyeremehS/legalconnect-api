@@ -1,4 +1,5 @@
 import prisma from "../prisma/prismaClient";
+import { UserRole } from "@prisma/client"; // Adjust the path as needed
 
 export class MessageRepository {
     async createMessage(senderId: string, receiverId: string, senderRole: string, content: string) {
@@ -134,112 +135,91 @@ export class MessageRepository {
         return result;
     }
 
-    async getLawyerMessageCalls(lawyerId: string) {
-        console.log('Repository getLawyerMessageCalls called with lawyerId:', lawyerId);
-        
-        // First, get all unique sender IDs who have sent messages to this lawyer
-        const uniqueSenders = await prisma.message.groupBy({
-            by: ['senderId'],
-            where: {
-                receiverId: lawyerId,
-                senderRole: 'user' // Only messages from users/clients
+async getLawyerMessageCalls(lawyerId: string) {
+    console.log('Repository getLawyerMessageCalls called with lawyerId:', lawyerId);
+
+    // Fetch ALL messages where the lawyer is sender or receiver
+    const messages = await prisma.message.findMany({
+        where: {
+            OR: [
+                { senderId: lawyerId },
+                { receiverId: lawyerId }
+            ]
+        },
+        include: {
+            sender: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    role: true,
+                }
             },
-        });
+            receiver: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    role: true,
+                }
+            }
+        },
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
 
-        console.log('Found unique senders:', uniqueSenders.length);
+    console.log(`Found ${messages.length} messages for lawyer`);
 
-        // Then, for each sender, get their latest message and statistics
-        const clientMessages = await Promise.all(
-            uniqueSenders.map(async ({ senderId }) => {
-                // Get the latest message from this client
-                const latestMessage = await prisma.message.findFirst({
-                    where: {
-                        senderId,
-                        receiverId: lawyerId,
-                    },
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                    include: {
-                        sender: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                email: true,
-                                role: true,
-                            }
-                        }
-                    },
-                });
+    // Group by client (the "other user" that isn't the lawyer)
+    const conversationsMap = new Map<string, any>();
 
-                // Count different types of messages for this client
-                const messageCounts = await prisma.message.groupBy({
-                    by: ['messageType'],
-                    where: {
-                        senderId,
-                        receiverId: lawyerId,
-                    },
-                    _count: {
-                        id: true,
-                    },
-                });
+    for (const message of messages) {
+        const otherUser =
+            message.senderId === lawyerId ? message.receiver : message.sender;
+        if (!otherUser || otherUser.role !== UserRole.CLIENT) continue; // only clients
 
-                const callRequestCount = messageCounts.find(
-                    (count) => count.messageType === 'call-request'
-                )?._count.id || 0;
-
-                const regularMessageCount = messageCounts.find(
-                    (count) => count.messageType === 'message'
-                )?._count.id || 0;
-
-                // Check if there are any active call requests
-                const activeCallRequest = await prisma.message.findFirst({
-                    where: {
-                        senderId,
-                        receiverId: lawyerId,
-                        messageType: 'call-request',
-                        status: 'active'
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
-                });
-
-                return {
-                    clientId: senderId,
-                    client: latestMessage?.sender,
-                    latestMessage,
-                    callRequestCount,
-                    regularMessageCount,
-                    totalMessages: callRequestCount + regularMessageCount,
-                    hasActiveCallRequest: !!activeCallRequest,
-                    activeCallRequest
-                };
-            })
-        );
-
-        // Filter out any null results and sort by latest message date
-        const result = clientMessages
-            .filter((item) => item.latestMessage !== null)
-            .sort((a, b) => {
-                const dateA = new Date(a.latestMessage!.createdAt);
-                const dateB = new Date(b.latestMessage!.createdAt);
-                return dateB.getTime() - dateA.getTime();
+        if (!conversationsMap.has(otherUser.id)) {
+            conversationsMap.set(otherUser.id, {
+                client: otherUser,
+                latestMessage: message,
+                callRequestCount: 0,
+                regularMessageCount: 0,
+                totalMessages: 0,
+                hasActiveCallRequest: false,
+                activeCallRequest: null,
             });
+        }
 
-        console.log('Final client calls result:', result.length);
-        
-        result.forEach((item, index) => {
-            console.log(`Client ${index + 1}:`);
-            console.log(`  Client: ${item.client?.firstName} ${item.client?.lastName}`);
-            console.log(`  Latest message: "${item.latestMessage?.content?.substring(0, 30)}..."`);
-            console.log(`  Call requests: ${item.callRequestCount}, Regular messages: ${item.regularMessageCount}`);
-            console.log(`  Has active call request: ${item.hasActiveCallRequest}`);
-        });
-        
-        return result;
+        const convo = conversationsMap.get(otherUser.id);
+
+        // Count messages
+        if (message.messageType === "call-request") {
+            convo.callRequestCount++;
+            if (message.status === "active" && !convo.activeCallRequest) {
+                convo.hasActiveCallRequest = true;
+                convo.activeCallRequest = message;
+            }
+        } else if (message.messageType === "message") {
+            convo.regularMessageCount++;
+        }
+
+        convo.totalMessages++;
     }
+
+    // Convert Map to array
+    const result = Array.from(conversationsMap.values()).sort(
+        (a, b) =>
+            new Date(b.latestMessage.createdAt).getTime() -
+            new Date(a.latestMessage.createdAt).getTime()
+    );
+
+    console.log("Final grouped conversations:", result.length);
+    return result;
+}
+
 
     async getRecentMessages(userId: string) {
         try {
