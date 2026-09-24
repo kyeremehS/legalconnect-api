@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import { VideoInteractionController } from '../controllers/video-interaction.controller';
 import { VideoInteractionService } from '../services/video-interaction.service';
-import { authenticate } from '../middlewares/Auth.middleware';
-import { PrismaClient } from '@prisma/client';
+import { authenticate, authorize } from '../middlewares/Auth.middleware';
+import prisma from '../prisma/prismaClient';
 
 const router = Router();
 const videoInteractionController = new VideoInteractionController();
 const videoInteractionService = new VideoInteractionService();
-const prisma = new PrismaClient();
 
 console.log('Video interaction routes being registered...');
 
@@ -17,19 +16,16 @@ router.use((req, res, next) => {
   next();
 });
 
-// Test routes (no authentication required)
+// Test/health routes (public for compat — frontend GET_VIDEO_STATS uses /test-stats-simple)
 router.get('/test', (req, res) => {
-  console.log('Test route hit successfully');
   res.json({ message: 'Video interaction routes are working!' });
 });
 
 router.get('/test-stats', (req, res) => {
-  console.log('Test stats route hit with query:', req.query);
   res.json({ message: 'Test stats route reached', query: req.query });
 });
 
 router.get('/test-stats-simple', (req, res) => {
-  console.log('Simple test stats route hit');
   res.json({ 
     success: true,
     data: { likeCount: 0, commentCount: 0, userLiked: false },
@@ -37,7 +33,8 @@ router.get('/test-stats-simple', (req, res) => {
   });
 });
 
-router.get('/test-users', async (req, res) => {
+// Debug routes below expose DB contents / mutate likes — admin only.
+router.get('/test-users', authenticate, authorize('ADMIN'), async (req, res) => {
   console.log('=== TEST USERS ROUTE HIT ===');
   
   try {
@@ -73,7 +70,7 @@ router.get('/test-users', async (req, res) => {
   }
 });
 
-router.get('/test-like-real', async (req, res) => {
+router.get('/test-like-real', authenticate, authorize('ADMIN'), async (req, res) => {
   console.log('=== TEST LIKE REAL ROUTE HIT ===');
   console.log('Query parameters:', req.query);
   
@@ -120,7 +117,7 @@ router.get('/test-like-real', async (req, res) => {
   }
 });
 
-router.post('/test-like', async (req, res) => {
+router.post('/test-like', authenticate, authorize('ADMIN'), async (req, res) => {
   console.log('=== TEST LIKE ROUTE HIT ===');
   console.log('Request body:', req.body);
   

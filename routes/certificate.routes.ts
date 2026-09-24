@@ -15,7 +15,7 @@ const verifyCertificateSchema = z.object({
 
 // Public endpoint to verify certificate
 // POST /api/certificates/verify
-router.post('/verify', 
+router.post('/verify', validateSchema(verifyCertificateSchema),
   certificateController.verifyCertificate.bind(certificateController)
 );
 

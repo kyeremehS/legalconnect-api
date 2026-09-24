@@ -2,8 +2,8 @@
 
 Create an Excel file named `lawyers in good standing.xlsx` with these exact column headers:
 
-| Name of Lawyer | Date of Issue | Certificate Number |
-|----------------|---------------|-------------------|
+| Name of Lawyer | Date of Issue | Certificate No |
+|----------------|---------------|----------------|
 | John Doe | 2023-01-15 | CERT-001 |
 | Jane Smith | 2022-12-20 | CERT-002 |
 | Michael Johnson | 2023-03-10 | CERT-003 |
@@ -20,10 +20,11 @@ Create an Excel file named `lawyers in good standing.xlsx` with these exact colu
    - Accepts various formats: YYYY-MM-DD, MM/DD/YYYY, etc.
    - Excel date format is also supported
 
-3. **Certificate Number** (Required)
+3. **Certificate No** (Required)
    - Unique identifier for the certificate
    - Text or number format
    - Must be unique across all records
+   - Header must be exactly `Certificate No` (matches `prisma/seed.ts`)
 
 ## Notes:
 - Column headers must match exactly (case-sensitive)

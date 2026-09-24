@@ -8,11 +8,11 @@ const availabilityController = new AvailabilityController();
 // Get available lawyers for booking (public endpoint for clients)
 router.get('/lawyers/available', availabilityController.getAvailableLawyers);
 
-// Testing endpoints
-router.get('/testing/lawyers', availabilityController.getAllLawyers);
-router.get('/testing/appointments', availabilityController.debugAllAppointments);
-router.get('/testing/user-lawyer-info', AuthMiddleware.authenticate, availabilityController.debugUserLawyerInfo);
-router.post('/testing/verify-lawyer/:lawyerId', availabilityController.verifyLawyerForTesting);
+// Testing/debug endpoints — admin only, never public in production
+router.get('/testing/lawyers', AuthMiddleware.authenticate, AuthMiddleware.authorize('ADMIN'), availabilityController.getAllLawyers);
+router.get('/testing/appointments', AuthMiddleware.authenticate, AuthMiddleware.authorize('ADMIN'), availabilityController.debugAllAppointments);
+router.get('/testing/user-lawyer-info', AuthMiddleware.authenticate, AuthMiddleware.authorize('ADMIN'), availabilityController.debugUserLawyerInfo);
+router.post('/testing/verify-lawyer/:lawyerId', AuthMiddleware.authenticate, AuthMiddleware.authorize('ADMIN'), availabilityController.verifyLawyerForTesting);
 
 // Protected routes that require authentication
 router.use(AuthMiddleware.authenticate);

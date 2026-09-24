@@ -84,7 +84,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// =================== Routes ===================
+// Routes
 app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to the LegalConnect API',
@@ -116,10 +116,14 @@ app.use('*', (req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// Error handler
+// Error handler — never leak stack traces in production
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: 'Something went wrong!' });
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Something went wrong!',
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
 });
 
 // Start server

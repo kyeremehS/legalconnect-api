@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './prisma/prismaClient';
 
 async function resetVideoData() {
   try {
@@ -40,4 +38,12 @@ async function resetVideoData() {
   }
 }
 
-resetVideoData();
+// Destructive dev utility — only run when explicitly invoked, never on import.
+// Usage: npx ts-node reset-videos.ts (with NODE_ENV=development)
+if (require.main === module) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('Refusing to reset video data in production.');
+    process.exit(1);
+  }
+  resetVideoData();
+}

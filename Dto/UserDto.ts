@@ -51,7 +51,7 @@ export const updateUserDto = z.object({
         .optional(),
     
     role: z
-        .enum(['CLIENT', 'LAWYER', 'ADMIN', 'CONSULTANT'])
+        .enum(['CLIENT', 'LAWYER', 'ADMIN'])
         .optional(),
     
     status: z

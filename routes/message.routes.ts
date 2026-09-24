@@ -38,20 +38,22 @@ router.get("/conversations",
     (req, res) => messageController.getUserConversations(req, res)
 );
 
+// @route   GET /api/messages/lawyer/calls
+// @desc    Get all active client conversations for lawyers (message-calls page)
+// @access  Private (Lawyers only)
+// NOTE: must be registered BEFORE /:senderId/:receiverId, otherwise
+// "lawyer/calls" would match senderId=lawyer, receiverId=calls.
+router.get("/lawyer/calls", 
+    authenticate,
+    (req, res) => messageController.getLawyerMessageCalls(req, res)
+);
+
 // @route   GET /api/messages/:senderId/:receiverId
 // @desc    Get conversation between two users
 // @access  Private (Authenticated users)
 router.get("/:senderId/:receiverId", 
     authenticate,
     (req, res) => messageController.getConversation(req, res)
-);
-
-// @route   GET /api/messages/lawyer/calls
-// @desc    Get all active client conversations for lawyers (message-calls page)
-// @access  Private (Lawyers only)
-router.get("/lawyer/calls", 
-    authenticate,
-    (req, res) => messageController.getLawyerMessageCalls(req, res)
 );
 
 // @route   POST /api/messages/call-request

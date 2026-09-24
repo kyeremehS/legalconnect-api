@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../prisma/prismaClient';
 
 // Extend the Request interface to include user information
 declare global {
@@ -29,15 +27,10 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    console.log('Authentication middleware called for:', req.method, req.path);
-    console.log('Query parameters:', req.query);
-    
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
-    console.log('Auth header:', authHeader ? 'present' : 'missing');
     
     if (!authHeader) {
-      console.log('No auth header found - returning 401');
       res.status(401).json({
         success: false,
         message: 'Access token is required'
@@ -57,7 +50,14 @@ export const authenticate = async (
     }
 
     // Verify JWT token
-    const secretKey = process.env.JWT_SECRET || 'default_secret_key';
+    const secretKey = process.env.JWT_SECRET;
+    if (!secretKey) {
+      res.status(500).json({
+        success: false,
+        message: 'Server misconfigured: JWT_SECRET is not set'
+      });
+      return;
+    }
     
     try {
       const decoded = jwt.verify(token, secretKey) as {
@@ -167,7 +167,11 @@ export const optionalAuth = async (
     }
 
     const token = authHeader.split(' ')[1];
-    const secretKey = process.env.JWT_SECRET || 'default_secret_key';
+    const secretKey = process.env.JWT_SECRET;
+    if (!secretKey) {
+      next();
+      return;
+    }
     
     try {
       const decoded = jwt.verify(token, secretKey) as {
