@@ -118,9 +118,6 @@ export class LawyerRepository {
         website?: string;
         specializations: string[];
         languages: string[];
-        certificateNumber?: string;
-        certificateVerified?: boolean;
-        certificateVerifiedAt?: Date;
         verificationStatus?: any;
         isVerified?: boolean;
         verifiedAt?: Date;

@@ -7,7 +7,6 @@ import { Server } from 'socket.io';
 import userouter from './routes/user.routes';
 import lawyerRouter from './routes/lawyer.routes';
 import appointmentRouter from './routes/appointment.routes';
-import certificateRouter from './routes/certificate.routes';
 import adminVerificationRouter from './routes/admin-verification.routes';
 import lawyerRegistrationRouter from './routes/lawyer-registration.routes';
 import uploadRouter from './routes/upload.routes';
@@ -16,6 +15,8 @@ import messageRouter from './routes/message.routes';
 import availabilityRouter from './routes/availability.routes';
 import publicRouter from './routes/public.routes';
 import dashboardRouter from './routes/dashboard.routes';
+import enquiryRouter from './routes/enquiry.routes';
+import invitationRouter from './routes/invitation.routes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -104,12 +105,13 @@ app.use('/api/lawyer-registration', lawyerRegistrationRouter);
 app.use('/api/uploads', uploadRouter);
 app.use('/api/videos', videoInteractionRouter);
 app.use('/api/appointments', appointmentRouter);
-app.use('/api/certificates', certificateRouter);
 app.use('/api/admin/verifications', adminVerificationRouter);
 app.use('/api/messages', messageRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/availability', availabilityRouter);
 app.use('/api/public', publicRouter);
+app.use('/api/enquiries', enquiryRouter);
+app.use('/api/invitations', invitationRouter);
 
 // 404 handler
 app.use('*', (req, res) => {

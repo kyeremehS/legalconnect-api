@@ -28,9 +28,6 @@
     "xlsx": "^0.18.5",
     "zod": "^4.0.15"
   },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
-  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"

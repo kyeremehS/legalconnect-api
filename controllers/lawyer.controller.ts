@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { LawyerService } from '../services/lawyer.service';
 import { LawyerVerificationService } from '../services/lawyer-verification.service';
-import { verifyLawyerCertificate } from '../services/certificate.service';
 import { LawyerRepository } from '../repositories/lawyer.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { VideoInteractionService } from '../services/video-interaction.service';
@@ -84,74 +83,9 @@ export class LawyerController {
         }
     }
 
+    // Certificate verification removed with the Excel system (410 Gone).
     async verifyCertificate(req: Request, res: Response) {
-        try {
-            const userId = req.user?.id;
-            const { certificateNumber, nameOfLawyer } = req.body;
-            
-            if (!userId) {
-                return res.status(401).json({ error: 'User not authenticated' });
-            }
-
-            if (!certificateNumber) {
-                return res.status(400).json({ error: 'Certificate number is required' });
-            }
-
-            const lawyer = await lawyerRepository.findByUserId(userId);
-            if (!lawyer) {
-                return res.status(404).json({ error: 'Lawyer profile not found' });
-            }
-
-            // Get user details for name verification
-            const user = await userRepository.findById(userId);
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            const certificateVerification = await verifyLawyerCertificate({
-                certificateNumber,
-                nameOfLawyer: nameOfLawyer || `${user.firstName} ${user.lastName}`
-            });
-
-            // Update lawyer and verification records if verified
-            if (certificateVerification.verified) {
-                await lawyerRepository.update(lawyer.id, {
-                    certificateNumber,
-                    certificateVerified: true,
-                    certificateVerifiedAt: new Date()
-                });
-
-                // Update verification record
-                let verification = await verificationService.getVerificationByLawyerId(lawyer.id);
-                if (!verification) {
-                    // Create verification record if it doesn't exist
-                    verification = await verificationService.createVerification({
-                        lawyerId: lawyer.id,
-                        certificateVerified: true,
-                        certificateNumber,
-                        certificateName: certificateVerification.certificate?.nameOfLawyer,
-                        certificateIssueDate: certificateVerification.certificate?.dateOfIssue,
-                        certificateMatchScore: certificateVerification.matchScore
-                    });
-                } else {
-                    await verificationService.updateCertificateVerification(lawyer.id, {
-                        certificateVerified: true,
-                        certificateNumber,
-                        certificateName: certificateVerification.certificate?.nameOfLawyer,
-                        certificateIssueDate: certificateVerification.certificate?.dateOfIssue,
-                        certificateMatchScore: certificateVerification.matchScore
-                    });
-                }
-            }
-
-            res.json({
-                success: true,
-                data: certificateVerification
-            });
-        } catch (error) {
-            console.error('Error verifying certificate:', error);
-            res.status(500).json({ error: 'Failed to verify certificate' });
-        }
+        return res.status(410).json({ error: 'Certificate verification has been removed. Lawyer onboarding is now by invitation only.' });
     }
 
     async resubmitVerification(req: Request, res: Response) {

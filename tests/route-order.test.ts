@@ -32,4 +32,37 @@ describe('route ordering (no shadowing)', () => {
     expect(src).toMatch(/authenticate/);
     expect(src).toMatch(/403/);
   });
+
+  it('certificate routes are gone', () => {
+    expect(fs.existsSync(path.join(__dirname, '..', 'routes', 'certificate.routes.ts'))).toBe(false);
+    const index = fs.readFileSync(path.join(__dirname, '..', 'index.ts'), 'utf8');
+    expect(index).not.toMatch(/certificateRouter/);
+    expect(index).toMatch(/enquiryRouter/);
+    expect(index).toMatch(/invitationRouter/);
+  });
+
+  it('enquiry submit is public but rate-limited; admin queue is protected', () => {
+    const src = readRoute('enquiry.routes.ts');
+    expect(src).toMatch(/rateLimit\(3/);
+    expect(src).toMatch(/authorize\('ADMIN'\)/);
+  });
+
+  it('invitation validate is public; create/revoke/reissue are admin-only', () => {
+    const src = readRoute('invitation.routes.ts');
+    const validateIdx = src.indexOf("'/validate/:token'");
+    expect(validateIdx).toBeGreaterThanOrEqual(0);
+    // validate route registered without authenticate (check the line itself)
+    const validateLine = src.slice(0, validateIdx).split('\n').pop() || '';
+    expect(validateLine).not.toMatch(/authenticate/);
+    expect(src).toMatch(/authorize\('ADMIN'\)/);
+  });
+
+  it('registration requires an invitation token', () => {
+    const ctrl = fs.readFileSync(
+      path.join(__dirname, '..', 'controllers', 'lawyer-registration.controller.ts'), 'utf8'
+    );
+    expect(ctrl).toMatch(/invitationToken/);
+    expect(ctrl).toMatch(/InvitationService/);
+    expect(ctrl).not.toMatch(/from '\.\.\/services\/certificate\.service'/);
+  });
 });

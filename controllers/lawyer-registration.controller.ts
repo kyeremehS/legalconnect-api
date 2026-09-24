@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { LawyerVerificationService } from '../services/lawyer-verification.service';
-import { verifyCertificate } from '../services/certificate.service';
+import { InvitationService } from '../services/invitation.service';
 import prisma from '../prisma/prismaClient';
 import { hashPassword } from '../utils/bcrypt';
+import { acessToken } from '../utils/jwt';
 import { uploadLegalDocument, uploadVideoToS3, UploadResult } from '../utils/aws';
 
 // S3 file upload function
@@ -62,13 +63,8 @@ export class LawyerRegistrationController {
     this.lawyerVerificationService = new LawyerVerificationService();
   }
 
-  // Register a new lawyer with automatic verification
+  // Register a new lawyer via invitation (invite-only onboarding)
   async registerLawyer(req: Request, res: Response) {
-    console.log('🔍 Registration request received:', {
-      body: req.body,
-      headers: req.headers['content-type']
-    });
-    
     try {
       const {
         fullName,
@@ -76,7 +72,6 @@ export class LawyerRegistrationController {
         password,
         firm,
         location,
-        certificateNumber,
         barAdmissionYear,
         experience,
         education,
@@ -93,6 +88,15 @@ export class LawyerRegistrationController {
         firm,
         location
       });
+
+      // Invitation gate: registration requires a valid, unused token bound to this email
+      const invitationToken = req.body.invitationToken;
+      if (!invitationToken) {
+        return res.status(403).json({
+          success: false,
+          message: 'Registration is by invitation only. Please enquire to join and use your invitation link.'
+        });
+      }
 
       // Validate required fields
       if (!fullName || !email || !password || !firm) {
@@ -114,38 +118,14 @@ export class LawyerRegistrationController {
         });
       }
 
-      // Verify certificate automatically if provided
-      let certificateVerificationResult: {
-        isVerified: boolean;
-        message: string;
-        matchedCertificate: any;
-        confidence: number;
-      } | null = null;
-      let isVerified = false;
-      if (certificateNumber) {
-        try {
-          console.log(`🔍 Verifying certificate: ${certificateNumber}`);
-          isVerified = await verifyCertificate(
-            fullName,
-            barAdmissionYear || new Date().getFullYear().toString(),
-            certificateNumber
-          );
-          certificateVerificationResult = {
-            isVerified,
-            message: isVerified ? 'Certificate verified successfully' : 'Certificate not found or does not match',
-            matchedCertificate: null,
-            confidence: isVerified ? 100 : 0
-          };
-        } catch (error) {
-          console.error('Certificate verification error:', error);
-          certificateVerificationResult = {
-            isVerified: false,
-            message: 'Certificate verification failed',
-            matchedCertificate: null,
-            confidence: 0
-          };
-          isVerified = false;
-        }
+      // Consume the invitation (validates token, expiry, email match; single-use)
+      try {
+        await new InvitationService().consume(invitationToken, email);
+      } catch (inviteError: any) {
+        return res.status(inviteError.status || 400).json({
+          success: false,
+          message: inviteError.message || 'Invalid invitation'
+        });
       }
 
       // Hash password
@@ -163,7 +143,7 @@ export class LawyerRegistrationController {
         }
       });
 
-      // Create lawyer profile
+      // Create lawyer profile (identity comes from the invitation, not self-declared certs)
       const lawyer = await prisma.lawyer.create({
         data: {
           userId: user.id,
@@ -177,91 +157,33 @@ export class LawyerRegistrationController {
           languages: Array.isArray(languages) ? languages : (languages ? [languages] : []),
           website,
           professionalSummary,
-          certificateNumber,
-          certificateVerified: isVerified,
-          verificationStatus: isVerified ? 'APPROVED' : 'PENDING'
+          verificationStatus: 'PENDING'
         }
       });
 
-      // Parse bar admission date safely
-      let certificateIssueDate: Date | undefined = undefined;
-      if (barAdmissionYear) {
-        try {
-          // Handle different date formats
-          if (/^\d{4}$/.test(barAdmissionYear)) {
-            // Just a year (e.g., "2015")
-            certificateIssueDate = new Date(`${barAdmissionYear}-01-01`);
-          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(barAdmissionYear)) {
-            // DD/MM/YYYY format
-            const [day, month, year] = barAdmissionYear.split('/');
-            certificateIssueDate = new Date(`${year}-${month}-${day}`);
-          } else {
-            // Try parsing as-is
-            certificateIssueDate = new Date(barAdmissionYear);
-            if (isNaN(certificateIssueDate.getTime())) {
-              certificateIssueDate = undefined;
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to parse bar admission date:', barAdmissionYear);
-          certificateIssueDate = undefined;
-        }
-      }
-
-      // Create verification record
-      console.log('🔍 Creating verification record for lawyer:', lawyer.id);
+      // Create verification record (documents only)
       const verification = await this.lawyerVerificationService.createVerification({
-        lawyerId: lawyer.id,
-        certificateVerified: isVerified,
-        certificateNumber,
-        certificateName: fullName,
-        certificateIssueDate,
-        certificateMatchScore: isVerified ? 100 : 0
+        lawyerId: lawyer.id
       });
-      console.log('✅ Verification record created:', verification.id);
 
-      // If certificate is automatically verified, approve the lawyer
-      if (isVerified) {
-        console.log('🔍 Auto-approving verified lawyer:', fullName);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { 
-            isVerified: true,
-            status: 'ACTIVE'
-          }
-        });
-
-        await prisma.lawyer.update({
-          where: { id: lawyer.id },
-          data: { 
-            verificationStatus: 'APPROVED',
-            isVerified: true,
-            verifiedAt: new Date()
-          }
-        });
-
-        await this.lawyerVerificationService.approveVerification(lawyer.id, 'SYSTEM_AUTO_APPROVAL', 'Auto-approved based on certificate verification');
-        
-        console.log(`✅ Auto-verified and approved lawyer: ${fullName}`);
-      }
+      // Issue a token so the new lawyer can upload documents and track progress
+      const token = acessToken({ id: user.id, email: user.email, role: user.role });
 
       return res.status(201).json({
         success: true,
-        message: isVerified 
-          ? 'Registration successful! Your account has been verified and approved.'
-          : 'Registration submitted successfully. Your application is under review.',
+        message: 'Registration submitted successfully. Your application is under review.',
         data: {
           userId: user.id,
           lawyerId: lawyer.id,
           verificationId: verification.id,
-          isAutoVerified: isVerified,
-          verificationResult: certificateVerificationResult,
+          token,
           user: {
             id: user.id,
             email: user.email,
             fullName: user.fullName,
             isVerified: user.isVerified,
-            status: user.status
+            status: user.status,
+            role: user.role
           }
         }
       });
@@ -276,45 +198,13 @@ export class LawyerRegistrationController {
     }
   }
 
-  // Verify certificate only (for frontend validation)
+  // Certificate verification removed with the Excel system.
+  // Registration is now invitation-gated; identity comes from the invite.
   async verifyCertificate(req: Request, res: Response) {
-    try {
-      const { certificateNumber, fullName, barAdmissionYear } = req.body;
-
-      if (!certificateNumber) {
-        return res.status(400).json({
-          success: false,
-          message: 'Certificate number is required'
-        });
-      }
-
-      console.log(`🔍 Certificate verification request: ${certificateNumber}`);
-      const isVerified = await verifyCertificate(
-        fullName || 'Unknown',
-        barAdmissionYear || new Date().getFullYear().toString(),
-        certificateNumber
-      );
-
-      const verificationResult = {
-        isVerified,
-        message: isVerified ? 'Certificate verified successfully' : 'Certificate not found or does not match',
-        matchedCertificate: null,
-        confidence: isVerified ? 100 : 0
-      };
-
-      return res.status(200).json({
-        success: true,
-        data: verificationResult
-      });
-
-    } catch (error) {
-      console.error('Error in certificate verification:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error during verification',
-        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
-      });
-    }
+    return res.status(410).json({
+      success: false,
+      message: 'Certificate verification has been removed. Lawyer onboarding is now by invitation only.'
+    });
   }
 
   // Get all lawyer applications (admin only)
@@ -335,7 +225,6 @@ export class LawyerRegistrationController {
         where.OR = [
           { user: { fullName: { contains: search as string, mode: 'insensitive' } } },
           { user: { email: { contains: search as string, mode: 'insensitive' } } },
-          { certificateNumber: { contains: search as string, mode: 'insensitive' } },
           { firm: { contains: search as string, mode: 'insensitive' } }
         ];
       }

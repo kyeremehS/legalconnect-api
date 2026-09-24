@@ -192,6 +192,66 @@ enum VerificationStatus {
   RESUBMISSION_REQUIRED
 }
 
+enum EnquiryStatus {
+  NEW
+  UNDER_REVIEW
+  NEEDS_INFO
+  INVITED
+  REJECTED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// Public enquiry from a lawyer asking to join the platform.
+// Nothing is granted here — an admin triages and issues an invitation.
+model Enquiry {
+  id             String        @id @default(cuid())
+  fullName       String
+  email          String
+  phone          String?
+  firm           String?
+  location       String?
+  practiceAreas  String[]      @default([])
+  barNumber      String?       // self-declared, triage data only
+  barAdmissionYear String?
+  message        String?
+  status         EnquiryStatus @default(NEW)
+  refToken       String        @unique @default(cuid()) // tracking-page token
+  reviewNotes    String?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  invitationId   String?       @unique
+  invitation     LawyerInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("enquiries")
+}
+
+// Admin-issued invitation. Email-bound, single-use, expiring.
+// Registration email must match the invite — this is the identity gate.
+model LawyerInvitation {
+  id         String           @id @default(cuid())
+  email      String
+  name       String?
+  tokenHash  String           @unique // sha256 of the raw token; raw token never stored
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  revokedAt  DateTime?
+  invitedBy  String           // admin user id
+  enquiry    Enquiry?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@map("lawyer_invitations")
+}
+
 enum DocumentType {
   BAR_CERTIFICATE
   PRACTICING_CERTIFICATE
@@ -243,11 +303,6 @@ model Lawyer {
   otherDocumentUrl String[]
   videoUrl String[] // New field for video URLs
   
-  // Certificate verification info
-  certificateNumber String?
-  certificateVerified Boolean @default(false)
-  certificateVerifiedAt DateTime?
-  
   verification LawyerVerification?
   
   // Video content
@@ -265,17 +320,6 @@ model Lawyer {
   @@map("lawyers")
 }
 
-model Certificate {
-  id                Int      @id @default(autoincrement())
-  nameOfLawyer      String
-  dateOfIssue       DateTime
-  certificateNumber String   @unique
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  @@map("certificates")
-}
-
 model LawyerVerification {
   id        String   @id @default(cuid())
   lawyerId  String   @unique
@@ -286,13 +330,6 @@ model LawyerVerification {
   submittedAt DateTime @default(now())
   reviewedAt DateTime?
   reviewedBy String? // Admin user ID
-  
-  // Certificate verification
-  certificateVerified Boolean @default(false)
-  certificateNumber String?
-  certificateName String?
-  certificateIssueDate DateTime?
-  certificateMatchScore Float? // Matching confidence score
   
   // Document verification
   documentsSubmitted DocumentType[]

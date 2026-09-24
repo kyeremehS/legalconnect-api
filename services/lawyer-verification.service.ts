@@ -4,19 +4,6 @@ const prisma = new PrismaClient();
 
 export interface CreateVerificationData {
   lawyerId: string;
-  certificateVerified?: boolean;
-  certificateNumber?: string;
-  certificateName?: string;
-  certificateIssueDate?: Date;
-  certificateMatchScore?: number;
-}
-
-export interface UpdateCertificateVerificationData {
-  certificateVerified: boolean;
-  certificateNumber?: string;
-  certificateName?: string;
-  certificateIssueDate?: Date;
-  certificateMatchScore?: number;
 }
 
 export class LawyerVerificationService {
@@ -26,11 +13,6 @@ export class LawyerVerificationService {
       const verification = await prisma.lawyerVerification.create({
         data: {
           lawyerId: data.lawyerId,
-          certificateVerified: data.certificateVerified || false,
-          certificateNumber: data.certificateNumber,
-          certificateName: data.certificateName,
-          certificateIssueDate: data.certificateIssueDate,
-          certificateMatchScore: data.certificateMatchScore,
           documentsSubmitted: [] as any,
           documentsVerified: [] as any,
           documentsRejected: [] as any
@@ -101,34 +83,6 @@ export class LawyerVerificationService {
     } catch (error) {
       console.error('Error updating verification documents:', error);
       throw new Error('Failed to update verification documents');
-    }
-  }
-
-  async updateCertificateVerification(lawyerId: string, data: UpdateCertificateVerificationData) {
-    try {
-      const verification = await prisma.lawyerVerification.update({
-        where: { lawyerId },
-        data: {
-          certificateVerified: data.certificateVerified,
-          certificateNumber: data.certificateNumber,
-          certificateName: data.certificateName,
-          certificateIssueDate: data.certificateIssueDate,
-          certificateMatchScore: data.certificateMatchScore,
-          updatedAt: new Date()
-        },
-        include: {
-          lawyer: {
-            include: {
-              user: true
-            }
-          }
-        }
-      });
-
-      return verification;
-    } catch (error) {
-      console.error('Error updating certificate verification:', error);
-      throw new Error('Failed to update certificate verification');
     }
   }
 
