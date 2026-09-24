@@ -30,7 +30,8 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "tests"
   ],
   "ts-node": {
     "compilerOptions": {
